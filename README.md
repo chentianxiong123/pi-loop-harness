@@ -10,33 +10,15 @@
 # git clone <repo-url> project-archive
 # cd project-archive
 
-# 2. 设置路径（在 ~/.claude/CLAUDE.md 或项目 CLAUDE.md 中）
+# 2. 设路径（在任何 Agent 的配置文件中）
 export PROJECT_ARCHIVE_PATH="/path/to/project-archive"
 
 # 3. 注册你的项目
 python $PROJECT_ARCHIVE_PATH/core/init-project.py /path/to/project
 
-# 或分步
-python $PROJECT_ARCHIVE_PATH/core/sync-archive.py --register /path/to/project-a
-python $PROJECT_ARCHIVE_PATH/core/update-status.py init --project=project-a
-
-# 4. 安装 skill（Claude Code）
-mkdir -p ~/.claude/skills
-cp project-archive.md ~/.claude/skills/
-cp project-status.md ~/.claude/skills/
-cp project-recall.md ~/.claude/skills/
+# 4. 装 skill（让 Agent 知道怎么用）
+# 直接把 3 个 .md skill 文件放到 Agent 的 skill 目录即可
 ```
-
-## 路径设置
-
-在使用 project-archive 的 Agent 配置中（如 `~/.claude/CLAUDE.md`）添加：
-
-```bash
-# project-archive 工具路径
-export PROJECT_ARCHIVE_PATH="/home/user/project-archive"
-```
-
-在所有 skill 和脚本调用中，必须使用 `$PROJECT_ARCHIVE_PATH/core/` 而非相对路径。
 
 ## 目录结构
 
@@ -49,10 +31,6 @@ project-archive/
 │   ├── archive-decision.py     ← 决策树管理
 │   ├── archive-validator.py    ← 归档格式校验
 │   └── sync-archive.py         ← 项目注册/同步
-├── adapters/
-│   ├── claude-code.md          ← CC skill 格式
-│   ├── codex.md                ← Codex skill 格式
-│   └── generic.md              ← 通用格式
 ├── references/
 │   └── archive-template.md     ← 归档模板
 ├── project-archive.md          ← Skill 1: 归档
@@ -62,7 +40,7 @@ project-archive/
 
 ## 使用方式
 
-所有命令通过 `$PROJECT_ARCHIVE_PATH` 调用：
+核心是 **6 个纯 Python CLI 脚本**，任何 Agent（Claude、Codex、GPT 等只要能执行 shell 命令）都能调用：
 
 ```bash
 # 初始化项目
@@ -103,23 +81,17 @@ python $PROJECT_ARCHIVE_PATH/core/archive-validator.py --project=<项目名>
 └── tech-stack.md
 ```
 
-## 发行
+## 3 个 Skill
 
-### Claude Code
+这些 skill 文件是 Agent 的说明书，告诉你什么时候该干什么：
 
-```bash
-# 1. 安装 skill
-cp project-archive.md ~/.claude/skills/
-cp project-status.md ~/.claude/skills/
-cp project-recall.md ~/.claude/skills/
+| Skill | 什么时候用 | 干什么 |
+|-------|-----------|--------|
+| `project-archive.md` | 模块做完时 | 写归档、更新状态、记录决策 |
+| `project-status.md` | 启动/切换/结束时 | 读上下文、同步进度 |
+| `project-recall.md` | 用户问历史时 | 搜归档、查决策链 |
 
-# 2. 在 CLAUDE.md 中设置路径
-echo 'export PROJECT_ARCHIVE_PATH="$HOME/project-archive"' >> ~/.claude/CLAUDE.md
-```
-
-### 其他 Agent
-
-在 `adapters/` 中选择对应格式的适配器文件。
+**任何 Agent 都能用** — 把 .md 文件装进 Agent 的 skill 目录就行。不装也能用，自己记住命令手动调用即可。
 
 ## License
 
