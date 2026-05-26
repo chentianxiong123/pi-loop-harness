@@ -1,4 +1,4 @@
-# Project Archive · Claude Code Adapter
+# 地图归档 (Project Archive) · Claude Code Adapter
 
 将 project-archive 的三个 skill 按 CC 格式分拆。
 

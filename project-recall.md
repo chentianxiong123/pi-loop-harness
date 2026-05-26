@@ -1,6 +1,6 @@
 # Project Recall
 
-> 跨项目检索历史 — 归档搜索 + 决策追踪
+> 跨项目检索历史 — 地图归档的检索能力
 > 依赖：`$PROJECT_ARCHIVE_PATH` 已设置（见 project-archive skill）
 
 ## 当触发
