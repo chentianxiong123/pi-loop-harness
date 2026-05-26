@@ -6,18 +6,14 @@
 ## 安装
 
 ```bash
-# 1. 克隆或下载项目
-# git clone <repo-url> project-archive
-# cd project-archive
+# 1. 下载地图归档（见下方"下载方式"）
+cd project-archive
 
-# 2. 设路径（在任何 Agent 的配置文件中）
+# 2. 设置路径（在任何 Agent 的配置文件中）
 export PROJECT_ARCHIVE_PATH="/path/to/project-archive"
 
 # 3. 注册你的项目
 python $PROJECT_ARCHIVE_PATH/core/init-project.py /path/to/project
-
-# 4. 装 skill（让 Agent 知道怎么用）
-# 直接把 3 个 .md skill 文件放到 Agent 的 skill 目录即可
 ```
 
 ## 目录结构
@@ -83,15 +79,37 @@ python $PROJECT_ARCHIVE_PATH/core/archive-validator.py --project=<项目名>
 
 ## 3 个 Skill
 
-这些 skill 文件是 Agent 的说明书，告诉你什么时候该干什么：
+Skill 是 Agent（AI 助手）的说明书文件，告诉它"什么时候该干什么"。地图归档本身是 **Python 脚本**，Skill 只是教 Agent 怎么调用这些脚本。
 
-| Skill | 什么时候用 | 干什么 |
+**你用地图归档只需要两样东西：**
+1. **`core/` 里的 Python 脚本** — 跑命令用
+2. **3 个 `.md` Skill 文件** — 装进 Agent 让它知道怎么帮你调用脚本
+
+| Skill 文件 | 什么时候用 | 干什么 |
 |-------|-----------|--------|
 | `project-archive.md` | 模块做完时 | 写归档、更新状态、记录决策 |
 | `project-status.md` | 启动/切换/结束时 | 读上下文、同步进度 |
 | `project-recall.md` | 用户问历史时 | 搜归档、查决策链 |
 
-**任何 Agent 都能用** — 把 .md 文件装进 Agent 的 skill 目录就行。不装也能用，自己记住命令手动调用即可。
+装进 Agent 的方法也很简单——直接把 .md 文件复制到 Agent 的 skill 目录：
+
+```bash
+# Claude Code 示例
+mkdir -p ~/.claude/skills
+cp project-archive.md ~/.claude/skills/
+cp project-status.md ~/.claude/skills/
+cp project-recall.md ~/.claude/skills/
+```
+
+**任何 Agent 都能用** — 不装 Skill 也能用，自己记住命令手动调用脚本就行。Skill 只是省了记忆成本。
+
+## 下载方式
+
+| 方式 | 命令 |
+|------|------|
+| git clone | `git clone https://github.com/chentianxiong123/-project-archive.git` |
+| ZIP 下载 | GitHub 页面点 `Code → Download ZIP`，解压即用 |
+| 仅核心脚本 | 只要 `core/` 目录就能跑，其他是说明书 |
 
 ## License
 
