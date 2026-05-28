@@ -4,14 +4,18 @@ STATUS.md 共享状态管理工具（全局存储 v2）
 存储位置: ~/.project-archive/projects/<项目名>/STATUS.md
 
 用法:
-  update-status.py status [--project NAME]
-  update-status.py set-context "当前上下文内容" [--project NAME]
+  update-status.py status [--project NAME] [--workspace WS-ID]
+  update-status.py set-context "当前上下文内容" [--project NAME] [--workspace WS-ID]
   update-status.py add-todo "内容" [--project NAME]
   update-status.py mark-doing "内容" [--project NAME]
   update-status.py mark-done "内容" [--project NAME]
   update-status.py add-archive "YYYY-MM-DD--feat--xxx.md" [--project NAME]
   update-status.py add-decision "思考链：独立 think 表 ✅" [--project NAME]
   update-status.py init [--project NAME]
+  update-status.py set-coordination --phase=idle [--round=N] [--task-id=ID]
+      [--task-source=user] [--cc-verdict=none] [--codex-verdict=none] [--project NAME]
+  update-status.py add-review-log "N | actor | result | summary" [--project NAME] [--workspace WS-ID]
+  update-status.py set-status "completed" [--project NAME] [--workspace WS-ID]
 """
 
 import json, os, sys, time
@@ -33,7 +37,11 @@ def get_lock_file(project_name: str) -> Path:
     project_dir.mkdir(parents=True, exist_ok=True)
     return project_dir / ".status.lock"
 
-def get_status_file(project_name: str) -> Path:
+def get_status_file(project_name: str, workspace_id: str = None) -> Path:
+    if workspace_id:
+        ws_dir = ARCHIVE_ROOT / "projects" / project_name / "workspaces" / workspace_id.lower()
+        ws_dir.mkdir(parents=True, exist_ok=True)
+        return ws_dir / "STATUS.md"
     return ARCHIVE_ROOT / "projects" / project_name / "STATUS.md"
 
 def acquire_lock(project_name: str, timeout: int = 15) -> bool:
@@ -64,8 +72,8 @@ def release_lock(project_name: str):
     except FileNotFoundError:
         pass
 
-def read_status(project_name: str) -> str:
-    path = get_status_file(project_name)
+def read_status(project_name: str, workspace_id: str = None) -> str:
+    path = get_status_file(project_name, workspace_id)
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
         template = f"""# {project_name}
@@ -75,6 +83,17 @@ def read_status(project_name: str) -> str:
 <<<
 （待定）
 >>>
+
+## Coordination State
+- phase: idle
+- round: 0
+- task_id:
+- task_source: user
+- cc_verdict: none
+- codex_verdict: none
+
+## Review Log
+*（无）*
 
 ## 关键决策（活跃）
 - （从 decisions.json 自动生成）
@@ -94,8 +113,8 @@ def read_status(project_name: str) -> str:
         path.write_text(template, encoding="utf-8")
     return path.read_text(encoding="utf-8")
 
-def write_status(project_name: str, content: str):
-    path = get_status_file(project_name)
+def write_status(project_name: str, content: str, workspace_id: str = None):
+    path = get_status_file(project_name, workspace_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
     verify = path.read_text(encoding="utf-8")
@@ -112,6 +131,31 @@ def insert_after_heading(status: str, heading: str, line: str) -> str:
         return status
     insert_pos = idx + len(heading) + len(next_line) + 1
     return status[:insert_pos] + line + "\n" + status[insert_pos:]
+
+def update_coordination_field(status: str, key: str, value: str) -> str:
+    """Update a field in the Coordination State section of STATUS.md."""
+    import re
+    pat = r"(## Coordination State\n(?:- \w+: .*\n)*)"
+    m = re.search(pat, status)
+    if not m:
+        return status
+    block = m.group(1)
+    field_pat = r'(- ' + re.escape(key) + r': ).*'
+    if re.search(field_pat, block):
+        new_block = re.sub(field_pat, r'\1' + value, block)
+        return status[:m.start()] + new_block + status[m.end():]
+    return status
+
+def append_review_log(status: str, entry: str) -> str:
+    """Append a row to the Review Log table in STATUS.md."""
+    import re
+    pattern = r"(## Review Log\n(?:\|.*\n)*)"
+    m = re.search(pattern, status)
+    if not m:
+        return status
+    block = m.group(1).rstrip() + '\n'
+    new_block = block + f'| {entry} |\n'
+    return status[:m.start()] + new_block + status[m.end():]
 
 def cap_completed_section(status: str, max_items: int = 10) -> str:
     if "## 已完成（近期）" not in status:
@@ -205,14 +249,18 @@ def main():
         print("\n可用操作:")
         print("  status, set-context, add-todo, mark-doing, mark-done")
         print("  add-archive, add-decision, init, refresh-decisions")
+        print("  set-coordination, add-review-log")
         sys.exit(1)
 
     action = args[0]
 
     project_name = None
+    workspace_id = None
     for f in flags:
         if f.startswith("--project="):
             project_name = f.split("=", 1)[1]
+        elif f.startswith("--workspace="):
+            workspace_id = f.split("=", 1)[1]
     if not project_name:
         project_name = detect_project()
 
@@ -234,22 +282,22 @@ def main():
         sys.exit(1)
 
     try:
-        status = read_status(project_name)
+        status = read_status(project_name, workspace_id)
 
         if action == "status":
             print(status)
 
         elif action == "set-context":
             status = insert_after_heading(status, "## 当前上下文", f"<<<\n{content}\n>>>")
-            write_status(project_name, status)
+            write_status(project_name, status, workspace_id)
 
         elif action in ("add-todo", "add-feature"):
             status = insert_after_heading(status, "## 待办", f"- [ ] {content}")
-            write_status(project_name, status)
+            write_status(project_name, status, workspace_id)
 
         elif action == "add-explore":
             status = insert_after_heading(status, "## 待办", f"- [ ] {content} (技术探索)")
-            write_status(project_name, status)
+            write_status(project_name, status, workspace_id)
 
         elif action == "mark-doing":
             if f"- [ ] {content}" in status:
@@ -257,7 +305,7 @@ def main():
             elif f"- [ ] {content} (技术探索)" in status:
                 status = status.replace(f"- [ ] {content} (技术探索)", "")
             status = insert_after_heading(status, "## 进行中", f"- [ ] {content}")
-            write_status(project_name, status)
+            write_status(project_name, status, workspace_id)
 
         elif action == "mark-done":
             for prefix in ["- [ ] ", "- [ ] "]:
@@ -268,24 +316,51 @@ def main():
                         status = status.replace(f"{prefix}{content}", "")
             status = insert_after_heading(status, "## 已完成（近期）", f"- ✅ {content}")
             status = cap_completed_section(status, 10)
-            write_status(project_name, status)
+            write_status(project_name, status, workspace_id)
 
         elif action == "add-archive":
             line = f"- archive/{content}"
             status = insert_after_heading(status, "## 归档", line)
-            write_status(project_name, status)
+            write_status(project_name, status, workspace_id)
 
         elif action == "add-issue":
             status = insert_after_heading(status, "## 待办", f"- [ ] 🔴 {content}")
-            write_status(project_name, status)
+            write_status(project_name, status, workspace_id)
 
         elif action == "add-decision":
             status = insert_after_heading(status, "## 关键决策（活跃）", f"- {content}")
-            write_status(project_name, status)
+            write_status(project_name, status, workspace_id)
 
         elif action == "refresh-decisions":
             status = refresh_decisions_section(project_name, status)
-            write_status(project_name, status)
+            write_status(project_name, status, workspace_id)
+
+        elif action == "set-coordination":
+            for f in sys.argv[2:]:
+                if f.startswith("--phase="):
+                    status = update_coordination_field(status, "phase", f.split("=", 1)[1])
+                elif f.startswith("--round="):
+                    status = update_coordination_field(status, "round", f.split("=", 1)[1])
+                elif f.startswith("--task-id="):
+                    status = update_coordination_field(status, "task_id", f.split("=", 1)[1])
+                elif f.startswith("--task-source="):
+                    status = update_coordination_field(status, "task_source", f.split("=", 1)[1])
+                elif f.startswith("--cc-verdict="):
+                    status = update_coordination_field(status, "cc_verdict", f.split("=", 1)[1])
+                elif f.startswith("--codex-verdict="):
+                    status = update_coordination_field(status, "codex_verdict", f.split("=", 1)[1])
+            write_status(project_name, status, workspace_id)
+
+        elif action == "add-review-log":
+            status = append_review_log(status, content)
+            write_status(project_name, status, workspace_id)
+
+        elif action == "set-status":
+            import re
+            pattern = r"## 状态\n.*"
+            replacement = "## 状态\n" + content
+            status = re.sub(pattern, replacement, status)
+            write_status(project_name, status, workspace_id)
 
         else:
             print(f"未知操作: {action}")

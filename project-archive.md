@@ -2,6 +2,9 @@
 
 > 地图归档系统 — 全局存储，记录所有项目的开发历史
 > 使用前必须设置 `PROJECT_ARCHIVE_PATH`（见下方说明）
+>
+> **权限：Hermes 专属。** CC 和 Codex 不能归档，只有 Hermes 有写入 archive/ 的权限。
+> 归档前必须经过对证循环：CC commit → Codex 审查（REVIEW-PASS）→ Hermes 终审 → 归档。见 project-coordinate skill。
 
 ## 路径设置
 
@@ -19,11 +22,9 @@ export PROJECT_ARCHIVE_PATH="/path/to/project-archive"
 
 ## 当触发
 
-- 用户说："归档"、"存档"、"记录一下"
-- 用户输出包含完成总结 + 改动清单表格
-- 用户输出包含"零新增错误"、"零错误"
-- 用户输出包含"效果："段落
-- AI 完成模块后自动检测到上述信号
+- **仅 Hermes**：三签达成（cc_verdict=approved + codex_verdict=approved）后，Hermes 启动归档
+- **仅 Hermes**：用户对 Hermes 说"归档"、"存档"、"记录一下"
+- **仅 Hermes**：Hermes 完成验收后自动触发
 
 ## 不要触发
 
@@ -31,6 +32,7 @@ export PROJECT_ARCHIVE_PATH="/path/to/project-archive"
 - 工作还在进行中，没有明确的完成信号
 - 改动清单少于 3 个文件
 - 用户说"等一下"、"还没完"
+- **CC 或 Codex 尝试直接归档 — 拒绝，必须通过 Hermes**
 
 ## 存储位置
 

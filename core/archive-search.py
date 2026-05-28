@@ -111,26 +111,26 @@ def search_with_content(project_name: str = None, keyword: str = None,
         print(f"{i}. [{proj}] {file.name}")
         
         # 提取成果
-        if "## 成果" in content:
-            section = content.split("## 成果")[1].split("##")[0]
+        if "## 探索成果" in content:
+            section = content.split("## 探索成果")[1].split("##")[0]
             for line in section.strip().split("\n"):
                 if line.strip().startswith("- "):
                     print(f"   成果: {line.strip()[2:].strip()}")
                     break
-        
+
         # 提取技术栈
-        if "## 用了什么" in content:
-            section = content.split("## 用了什么")[1].split("##")[0]
+        if "## 技术栈" in content:
+            section = content.split("## 技术栈")[1].split("##")[0]
             techs = []
             for line in section.strip().split("\n"):
                 if line.strip().startswith("- "):
                     techs.append(line.strip()[2:].strip())
             if techs:
                 print(f"   技术栈: {', '.join(techs[:3])}")
-        
+
         # 提取决策
-        if "## 为什么这样" in content:
-            section = content.split("## 为什么这样")[1].split("##")[0]
+        if "## 关键决策" in content:
+            section = content.split("## 关键决策")[1].split("##")[0]
             for line in section.strip().split("\n"):
                 if line.strip().startswith("- "):
                     print(f"   决策: {line.strip()[2:].strip()}")
@@ -159,14 +159,14 @@ def generate_index(index_type: str = "all", global_search: bool = False):
             date_str = name[:10]
             category = name.split("--")[1] if "--" in name else "?"
             
-            if "## 为什么这样" in content:
-                section = content.split("## 为什么这样")[1].split("##")[0]
+            if "## 关键决策" in content:
+                section = content.split("## 关键决策")[1].split("##")[0]
                 for line in section.strip().split("\n"):
                     if line.strip().startswith("- "):
                         decisions.append(f"- [{proj}] {name}: {line.strip()}")
             
-            if "## 用了什么" in content:
-                section = content.split("## 用了什么")[1].split("##")[0]
+            if "## 技术栈" in content:
+                section = content.split("## 技术栈")[1].split("##")[0]
                 for line in section.strip().split("\n"):
                     if line.strip().startswith("- "):
                         tech_stack.append(f"- [{proj}] {name}: {line.strip()}")

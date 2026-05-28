@@ -3,3 +3,7 @@
 # Ignore test artifacts that may appear due to Windows encoding quirks
 *USERPROFILE*
 *.project-archive*
+__pycache__/
+*.pyc
+.superpowers/
+docs/

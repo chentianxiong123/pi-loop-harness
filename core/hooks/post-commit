@@ -1,0 +1,38 @@
+#!/bin/bash
+# Git post-commit hook — 事件驱动对证循环
+# 安装：复制到项目 .git/hooks/post-commit，chmod +x
+# 作用：commit 后 POST 事件到 trigger_server
+
+HASH=$(git rev-parse --short HEAD)
+MSG=$(git log -1 --format='%s')
+PROJECT=$(basename $(pwd))
+
+WS=$(echo "$MSG" | sed -n 's/.*\[\(CC\|Codex\)-\(WS[0-9]*\)\].*/\2/p' | tr '[:upper:]' '[:lower:]')
+AGENT=$(echo "$MSG" | sed -n 's/.*\[\(CC\|Codex\)-.*\].*/\1/p')
+
+if [ -z "$WS" ] || [ -z "$AGENT" ]; then
+  exit 0
+fi
+
+if echo "$MSG" | grep -q "REVIEW-PASS"; then
+  REVIEW="PASS"
+elif echo "$MSG" | grep -q "REVIEW-FAIL"; then
+  REVIEW="FAIL"
+else
+  REVIEW=""
+fi
+
+EVENT_DIR="$HOME/.project-archive/projects/$PROJECT/events"
+mkdir -p "$EVENT_DIR"
+echo "$(date +%s)|$HASH|$AGENT|$WS|$MSG" >> "$EVENT_DIR/commit.log"
+
+if [ "$AGENT" = "CC" ]; then
+  EVENT_TYPE="cc-commit"
+elif [ "$AGENT" = "Codex" ]; then
+  EVENT_TYPE="codex-commit"
+fi
+
+curl -s -X POST http://127.0.0.1:9876/ \
+  -H "Content-Type: application/json" \
+  -d "{\"event\":\"${EVENT_TYPE}\",\"project\":\"${PROJECT}\",\"workspace\":\"${WS}\",\"hash\":\"${HASH}\",\"author\":\"${AGENT}\",\"message\":\"$(echo "$MSG" | sed 's/"/\\"/g')\",\"review\":\"${REVIEW}\"}" \
+  > /dev/null 2>&1 &

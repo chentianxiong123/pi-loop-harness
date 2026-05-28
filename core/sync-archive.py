@@ -20,7 +20,7 @@ def sync_push(project_dir: str):
     """本地归档 → 全局存储"""
     project_dir = Path(project_dir).resolve()
     local_archive = project_dir / "docs" / "archive"
-    global_archive = ARCHIVE_ROOT / project_dir.name / "archive"
+    global_archive = ARCHIVE_ROOT / "projects" / project_dir.name / "archive"
     
     if not local_archive.exists():
         print(f"本地归档不存在: {local_archive}")
@@ -44,7 +44,7 @@ def sync_push(project_dir: str):
 
 def sync_pull(project_name: str):
     """全局 → 本地（恢复备份）"""
-    global_archive = ARCHIVE_ROOT / project_name / "archive"
+    global_archive = ARCHIVE_ROOT / "projects" / project_name / "archive"
     local_archive = Path.cwd() / "docs" / "archive"
     
     if not global_archive.exists():
@@ -100,7 +100,7 @@ def list_projects():
     projects = json.loads(PROJECTS_FILE.read_text())
     print(f"已注册 {len(projects)} 个项目:")
     for p in projects:
-        global_archive = ARCHIVE_ROOT / p / "archive"
+        global_archive = ARCHIVE_ROOT / "projects" / p / "archive"
         count = len(list(global_archive.rglob("*.md"))) if global_archive.exists() else 0
         print(f"  {p} ({count} 个归档)")
 
