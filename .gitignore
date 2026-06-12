@@ -1,9 +1,4 @@
-# project-archive system storage path (not part of the repo)
-# The global ~/.project-archive/ is managed separately
-# Ignore test artifacts that may appear due to Windows encoding quirks
-*USERPROFILE*
-*.project-archive*
-__pycache__/
-*.pyc
-.superpowers/
-docs/
+_history/
+*.ps1
+*.py
+tmp/
