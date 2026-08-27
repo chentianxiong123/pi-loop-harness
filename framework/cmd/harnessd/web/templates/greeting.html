@@ -1,0 +1,10 @@
+<div class="card w-96 bg-base-100 shadow-xl" id="greeting-box">
+    <div class="card-body items-center text-center">
+        <h2 class="card-title">{{.Title}}</h2>
+        <p>{{.Message}}</p>
+        <button class="btn btn-primary"
+                hx-get="/api/greet"
+                hx-target="#greeting-box"
+                hx-swap="outerHTML">再问候一次</button>
+    </div>
+</div>
