@@ -10,6 +10,7 @@
 - [双框架总纲](docs/two-frameworks.md) — 核心架构认知
 - [软件工程哲学](docs/philosophy.md) — 意图驱动的分形软件工厂（思想底座）
 - [项目框架选型研究](docs/framework-research.md) — 若依 × SpringBoot → Go 映射
+- [framework/](framework/README.md) — GO 工程骨架模板（最小 hello，纯标准库）
 - [文档地图：AI 框架资产索引](docs/docmap-ai-framework.md) — 本机散落的 harness/loop 资产登记表
 
 ## 分支结构
