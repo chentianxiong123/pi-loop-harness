@@ -2,3 +2,4 @@ _history/
 *.ps1
 *.py
 tmp/
+framework/data/
