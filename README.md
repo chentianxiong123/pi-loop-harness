@@ -8,6 +8,7 @@
 
 - [蓝图总览](docs/blueprint-overview.md) — 综合全部文档的一张蓝图（入口文档）
 - [双框架总纲](docs/two-frameworks.md) — 核心架构认知
+- [项目框架选型研究](docs/framework-research.md) — 若依 × SpringBoot → Go 映射
 - [文档地图：AI 框架资产索引](docs/docmap-ai-framework.md) — 本机散落的 harness/loop 资产登记表
 
 ## 分支结构
