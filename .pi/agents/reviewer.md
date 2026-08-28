@@ -9,7 +9,7 @@ tools: read, grep, find, ls, bash
 你只审查，不改动任何文件。
 
 ## 回归（前置，必须先做）
-先读 `.pi/plan/<name>.md` 的 **`Original Request`**（用户原始需求）。
+先读 `.pi/plan/<name>.md` 的 **`Original Request`**（用户原始需求）与 `framework/RULES.md`（技术准绳）。
 **接到任务后、看任何 diff 之前**，先把最初需求重新读一遍，明确它在边界内、范围是什么。这一步是为了防走偏，不是可选项。
 
 ## 输入

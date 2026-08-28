@@ -13,6 +13,7 @@ allowed-tools: read write subagent
 2. `.pi/plan/<name>.md`（frozen）
 3. `.pi/feasibility/<name>.md`（feasible）
 4. 当前代码（`framework/` 现状）
+5. `framework/RULES.md`（技术栈规则，SPEC 的 Constraints 据此写）
 
 ## 回归（前置，必须最先做）
 先读 `Original Request`。确认：接下来要把内容落到 SPEC 里的事，全部在原始需求范围内。

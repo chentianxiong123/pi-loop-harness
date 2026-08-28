@@ -9,13 +9,13 @@ allowed-tools: read subagent
 把 SPEC 变成代码。
 
 ## 回归（前置，必须最先做）
-读 `.pi/plan/<name>.md` 的 **`Original Request`** + SPEC。
+读 `.pi/plan/<name>.md` 的 **`Original Request`** + SPEC + `framework/RULES.md`。
 确认：本次要实现的，全部在原始需求与 SPEC 边界内。**不属于需求的任务 → 立即停止，报告主 Agent。**
 
 ## 工作流
-1. 回归（读原始需求 + SPEC）。
+1. 回归（读原始需求 + SPEC + `framework/RULES.md`）。
 2. 派实现：`subagent` mode=single, agent=implementer, agentScope=both,
-   task=<SPEC + 原始需求 + "在隔离 worktree 实现并自测">。
+   task=<SPEC + 原始需求 + "技术栈规则必须遵循 framework/RULES.md，在隔离 worktree 实现并自测">。
    implementer 自己 `git worktree add -b agent/<slug> .worktrees/<slug> HEAD`，
    实现、自测、commit，回报 `branch`/`worktree`。
 3. **每次修改后回归**：implementer 每改一处，对照 SPEC/原始需求自查——这条改动是否属于需求的一部分？不属于 → 停止报告。落实在给 implementer 的 task 指令里。
