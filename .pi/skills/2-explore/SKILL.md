@@ -12,15 +12,20 @@ allowed-tools: read subagent
 先读 `.pi/plan/<name>.md` 的 **`Original Request`**（用户原始需求）与 `Goal/Scope`。
 确认：本次探索要探的，确实落在原始需求边界内。边界外的探索直接停。
 同时读 `framework/RULES.md`（技术栈规则：Go/htmx/SQLite），作为评估"现有代码是否支持"的技术准绳。
+读账本 `.pi/runs/<name>.json`（确认 `stage: plan`；缺失则 `RESULT: NO_RUN_STATE`）。
 
 ## 工作流
-1. 回归完成（读原始需求 + PLAN + `framework/RULES.md`）。
+1. 回归完成（读原始需求 + PLAN + `framework/RULES.md` + 账本）。
 2. 派探查：`subagent` mode=single, agent=investigator, agentScope=both,
    task=<"评估可行性：现有 framework/ 代码是否支持？缺口？风险点？"+ 原始需求与 PLAN + "技术准绳见 framework/RULES.md">。
 3. 判定：
-   - **可行** → 写 `.pi/feasibility/<name>.md`（结论 feasible + **注意点/风险清单** + 实现要点），产出后再回归对一遍原始需求没跑偏。末行 `RESULT: FEASIBLE path=.pi/feasibility/<name>.md`。
-   - **有问题** → **回归提问**：不写可行性文件，`RESULT: INFEASIBLE reason=<...>`，并带 reason 回到 **环节1** 重新与用户对齐需求。
+   - **可行** → 写 `.pi/feasibility/<name>.md`（结论 feasible + **注意点/风险清单** + 实现要点），更新账本 `stage: explore`、`events` 追加"FEASIBLE"，产出后再回归对一遍原始需求没跑偏。末行 `RESULT: FEASIBLE path=.pi/feasibility/<name>.md`。
+   - **有问题** → **回归提问**：不写可行性文件，更新账本 `stage: ask`、`events` 追加"INFEASIBLE reason"，`RESULT: INFEASIBLE reason=<...>`，并带 reason 回到 **环节1** 重新与用户对齐需求。
+
+4. 读 `.pi/plan/<name>.md`（frozen）时同步核对账本结构；写可行性文件前后都确保账本一致。
+5. 末行：`RESULT: FEASIBLE path=.pi/feasibility/<name>.md run_state=.pi/runs/<name>.json`
 
 ## 铁律
 - 不在原始需求边界内的探索，禁止。
 - 有问题就回退，不许硬闯；回退时把原因带给环节1。
+- 账本是唯一状态源：stage/events 必须真实反映本次结果。

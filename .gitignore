@@ -5,5 +5,6 @@ tmp/
 framework/data/
 .worktrees/
 .pi/worktrees/
+.pi/runs/
 *.agent-state.json
 outbox/
