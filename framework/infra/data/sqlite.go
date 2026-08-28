@@ -1,4 +1,4 @@
-package db
+package data
 
 import (
 	"context"
@@ -37,19 +37,4 @@ func Open(ctx context.Context, path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("migrate sqlite: %w", err)
 	}
 	return handle, nil
-}
-
-// migrate 顺序执行建表脚本；简单起见用 "CREATE TABLE IF NOT EXISTS"，
-// 后续结构变更可引入带版本号的 migrations。
-func migrate(ctx context.Context, h *sql.DB) error {
-	const schema = `
-CREATE TABLE IF NOT EXISTS greeting_visits (
-    id    INTEGER PRIMARY KEY CHECK (id = 1), -- 单行：全局计数
-    count INTEGER NOT NULL DEFAULT 0
-);
-
-INSERT OR IGNORE INTO greeting_visits (id, count) VALUES (1, 0);
-`
-	_, err := h.ExecContext(ctx, schema)
-	return err
 }

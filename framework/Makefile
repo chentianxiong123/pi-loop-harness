@@ -4,7 +4,7 @@ GO  := go
 .PHONY: build run clean
 
 build:
-	$(GO) build -o $(BIN) ./cmd/harnessd
+	$(GO) build -o $(BIN) ./glue/assembly
 
 run: build
 	./$(BIN)

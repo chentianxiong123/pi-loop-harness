@@ -1,8 +1,6 @@
 # framework — GO 项目框架模板
 
-> pi-loop-harness 的**工程骨架模板**。纯标准库、零第三方依赖、单一二进制、零构建。
-> 本模板只做一件事：给 Pi 插件（loop-engine）提供一个可驻留的底座。
-> **不承载 loop/harness 逻辑**——那是 Pi 插件（TS）+ Python/skills 的事。
+按《分形解耦架构》组织的工程骨架。三层职责边界清晰，配合契约与 SPEC。
 
 ## 结构
 
@@ -10,33 +8,48 @@
 framework/
 ├── go.mod                     module: pi-loop-harness/framework
 ├── Makefile                   build / run / clean
-├── cmd/harnessd/
-│   ├── main.go                入口：路由 + html/template + HTMX 问候接口
-│   └── web/templates/         hello.html(页面) + greeting.html(HTMX 片段)
-└── bin/                       构建产物（gitignore）
+├── business/                  第一层：业务函数目录（系统心脏）
+│   └── hello/                  示例业务域（纯函数，零技术依赖）
+│       ├── greet.go            文件名＝函数名
+│       └── greet_test.go       同目录验证
+├── infra/                     第二层：基础设施目录（工具箱，无业务）
+│   ├── data/                   sqlite 连接/建表/读写
+│   └── web/templates/         html/template 页面 + HTMX 片段
+├── glue/                      第三层：胶水层（组装车间，无业务无工具）
+│   ├── interfaces/            契约文件（只声明形状，不写实现）
+│   │   ├── business/hello.go  业务契约
+│   │   └── infra/store.go     基础设施契约
+│   ├── assembly/              组装：routes(http) + main（接线+启动）
+│   ├── process/               启动/停止/健康检查脚本
+│   └── deploy/                Dockerfile + docker-compose.yml
+└── spec/                      SPEC 文档目录（对齐 Agent 生成，冻结后只读）
 ```
 
-- **视图**：标准库 `html/template` + HTMX 2.x + daisyUI（CDN），下次点击只换片段不刷整页
-- **端口**：默认 `:8100`（勿占他人端口），可用环境变量 `HARNESSD_ADDR` 覆盖
-- **embed**：模板 `go:embed` 进二进制，单文件分发
-- **新增页面**：`web/templates/` 加 `.html`，`main.go` 加路由
+## 分层铁律
+
+1. **业务目录**：只放业务函数，一个文件一个函数，`文件名=函数名`。不 import 外部库、不碰 HTTP、不碰 DB。
+2. **基础设施目录**：无逻辑，只放可复用技术函数。造新轮子前先 grep 这里。
+3. **胶水层**：`interfaces/` 合同约（对齐 SPEC 生成，冻结只读）；`assembly/` 显式组装依赖。业务不知道它会被怎么用。
+4. **业务函数不感知使用方式**：被组装成 HTTP 端点 / 定时任务 / 主程序，改法只动胶水层。
 
 ## 命令
 
 ```bash
-make build     # 编译 cmd/harnessd → bin/harnessd
+make build     # 编译 glue/assembly → bin/harnessd
 make run       # 编译 + 启动（默认 :8100）
-HARNESSD_ADDR=:8100 ./bin/harnessd   # 自定义端口
+glue/process/start.sh / stop.sh / health.sh   # 进程管理
+docker compose -f glue/deploy/docker-compose.yml up   # 容器化
 ```
 
 ## 冒烟
 
 ```bash
-curl localhost:8100/          # 页面
+curl localhost:8100/          # 页面（DTMX 问候）
 curl localhost:8100/api/greet # HTMX 片段（计数递增）
+curl localhost:8100/api/count # 计数
 ```
 
 ## 留意点
 
-- `embed` 默认忽略 `_` 开头文件 → 模板片段不要用 `_` 前缀（用 `greeting.html` 而非 `_greeting.html`）
-- 模板 `go:embed` 路径相对 main.go 所在目录 → 静态资源放 `cmd/harnessd/` 下
+- 契约只存形状，实现放 `assembly/`（编译期断言 `var _ infra.Store = ...` 兜底）
+- 新增业务：`business/<域>/<函数>.go` → `glue/interfaces/business/` 加契约 → `assembly/` 接路由
