@@ -13,7 +13,7 @@ allowed-tools: read write bash question subagent
 之后每个阶段动手前都先读它：修的是"报告里的问题"，不是别的。
 
 ## 工作流
-1. **症状采集**：逐字记 bug 报告 → `.pi/plan/<name>.md`(`Original Bug Report`)，创建账本 `.pi/runs/<name>.json`（`entry: bug`）。
+1. **症状采集**：逐字记 bug 报告 → `.pi/plan/<name>.md`(`Original Bug Report`)，用 `runstate_create`（name=<name>, entry=bug, originalRequest=逐字 bug 报告）建账本。
 2. **复现**：`make run`，按报告步骤复现；**先复现再动手改**。复现不了 → 回问用户要更细步骤（question/对话），不硬猜。
 3. **根因**：派 investigator 定位（只读）：症状 → 代码链路 → 最小根因文件:行。记录到隔 `root_cause`。
 4. **修复**：回归 + 派 implementer 在隔离 worktree 修（只改根因相关，不顺手重构/加 feature），自测。返回 branch/worktree。

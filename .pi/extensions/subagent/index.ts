@@ -158,6 +158,8 @@ interface SingleResult {
 	stopReason?: string;
 	errorMessage?: string;
 	step?: number;
+	/** Structured JSON extracted from the agent's final output (e.g. verdict). */
+	structured?: Record<string, unknown> | undefined;
 }
 
 interface SubagentDetails {
@@ -177,6 +179,47 @@ function getFinalOutput(messages: Message[]): string {
 		}
 	}
 	return "";
+}
+
+/**
+ * Extract a structured JSON object from the subagent's final text output.
+ * Mirrors loopengineer's handoff validator: tolerates markdown fences and
+ * trailing prose, returns the first balanced top-level JSON object.
+ * Returns undefined when no parseable object is present.
+ */
+function extractStructuredOutput(text: string): Record<string, unknown> | undefined {
+	if (!text) return undefined;
+	let candidate = text.trim();
+	const fenceMatch = candidate.match(/```(?:json)?\s*([\s\S]*?)```/);
+	if (fenceMatch) candidate = fenceMatch[1].trim();
+	const start = candidate.indexOf("{");
+	if (start < 0) return undefined;
+	let depth = 0;
+	let inString = false;
+	let escaped = false;
+	for (let i = start; i < candidate.length; i++) {
+		const char = candidate[i];
+		if (inString) {
+			if (escaped) escaped = false;
+			else if (char === "\\") escaped = true;
+			else if (char === '"') inString = false;
+			continue;
+		}
+		if (char === '"') inString = true;
+		else if (char === "{") depth++;
+		else if (char === "}") {
+			depth--;
+			if (depth === 0) {
+				const obj = candidate.slice(start, i + 1).replace(/,\s*([}\]])/g, "$1");
+				try {
+					return JSON.parse(obj) as Record<string, unknown>;
+				} catch {
+					return undefined;
+				}
+			}
+		}
+	}
+	return undefined;
 }
 
 function isFailedResult(result: SingleResult): boolean {
@@ -347,6 +390,7 @@ async function runSingleAgent(
 				cwd: cwd ?? defaultCwd,
 				shell: false,
 				stdio: ["ignore", "pipe", "pipe"],
+				env: { ...process.env, PI_SUBAGENT_ROLE: agent.name },
 			});
 			let buffer = "";
 
@@ -421,6 +465,7 @@ async function runSingleAgent(
 		});
 
 		currentResult.exitCode = exitCode;
+		currentResult.structured = extractStructuredOutput(getFinalOutput(currentResult.messages));
 		if (wasAborted) throw new Error("Subagent was aborted");
 		return currentResult;
 	} finally {
@@ -702,8 +747,16 @@ export default function (pi: ExtensionAPI) {
 						isError: true,
 					};
 				}
+				const singleOutput = getFinalOutput(result.messages) || "(no output)";
 				return {
-					content: [{ type: "text", text: getFinalOutput(result.messages) || "(no output)" }],
+					content: [
+						{
+							type: "text",
+							text: result.structured
+								? `${singleOutput}\n\n[structured] ${JSON.stringify(result.structured)}`
+								: singleOutput,
+						},
+					],
 					details: makeDetails("single")([result]),
 				};
 			}

@@ -39,9 +39,22 @@ skills + 扩展是开发流程层，随仓库就位，信任一次后用 `/skill
 
 ## 物理层（无需自己写）
 
-- **subagent 扩展**：`.pi/extensions/subagent/`，提供 `subagent` 工具（single/parallel/chain），每个子 agent 是隔离的 pi 子进程。
+- **subagent 扩展**：`.pi/extensions/subagent/`，提供 `subagent` 工具（single/parallel/chain），每个子 agent 是隔离的 pi 子进程；派发时写入 `PI_SUBAGENT_ROLE=<agent>` 环境变量，并从子 agent 末行 JSON 抽取 `[structured]` 输出。
 - **question 扩展**：`.pi/extensions/question.ts`，交互式选择/确认。
-- 角色定义：`.pi/agents/{investigator,implementer,reviewer}.md`。
+- **角色定义**：`.pi/agents/{investigator,implementer,reviewer}.md`。
+
+## 硬约束扩展（机制级，不靠约定）
+
+这些把 skill/agent.md 里的"软约束"变成扩展层硬拦截：
+
+| 扩展 | 提供的工具 | 硬约束 |
+|---|---|---|
+| `pi-permissions.ts` | (事件拦截) | 角色权限门：reviewer/investigator 只读禁写；implementer 只许写 `.worktrees/`；`glue/interfaces/**` 与 `.pi/plan|spec|tasks|smoke/` 任何角色禁改（契约/冻结锚）；禁破坏性 git（push/rebase/merge…） |
+| `pi-runstate.ts` | `runstate_get` / `runstate_update` / `runstate_create` | 账本 schema 校验 + stage 防跳步（expectStage）+ 审计事件 |
+| `pi-permissions` 注入 | `PI_SUBAGENT_ROLE` | 子 agent 自动带角色，进入对应权限模式 |
+
+**分工**：`pi-permissions` 管"能不能做"，`pi-runstate` 管"做没做对/到哪一步"，`subagent` 管"谁去做、结构化成不成"。三者合起来把流程从"文本约定"升级成"机制约束"。
+- 单测：`.pi/extensions/__tests__/pi-permissions.test.ts`（`bun test` 跑）
 
 ## 约定
 
