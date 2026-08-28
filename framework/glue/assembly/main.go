@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"pi-loop-harness/framework/business/msgwall"
 	"pi-loop-harness/framework/glue/interfaces/infra"
 	"pi-loop-harness/framework/infra/data"
 )
@@ -35,8 +36,9 @@ func main() {
 
 	mux := http.NewServeMux()
 	registerRoutes(mux, handle)
+	app := recoveryMiddleware(loggingMiddleware(mux))
 
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	if err := http.ListenAndServe(addr, app); err != nil {
 		panic(err)
 	}
 }
@@ -53,4 +55,12 @@ func (p *processor) Count(ctx context.Context) (int, error) {
 
 func (p *processor) Incr(ctx context.Context) (int, error) {
 	return data.IncrCount(ctx, p.db)
+}
+
+func (p *processor) CreateMessage(ctx context.Context, author, body string) (msgwall.Message, error) {
+	return data.CreateMessage(ctx, p.db, author, body)
+}
+
+func (p *processor) ListMessages(ctx context.Context, limit int) ([]msgwall.Message, error) {
+	return data.ListMessages(ctx, p.db, limit)
 }
