@@ -33,7 +33,7 @@ created: <date>
 ## Acceptance Criteria
 - [ ] ...
 ## Constraints
-- 端口 8100；三层 business/infra/glue；契约在 glue/interfaces/
+- 端口 8100；三层 business/infra/glue；契约在 glue/interfaces/；技术细节以 framework/RULES.md 为准
 ## Open Questions
 - （冻结后应为空）
 ```

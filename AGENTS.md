@@ -33,6 +33,7 @@ skills + 扩展是开发流程层，随仓库就位，信任一次后用 `/skill
 ## 约定
 
 - 端口 8100；三层 business/infra/glue；契约在 `glue/interfaces/`。
+- **技术栈规则**：`framework/RULES.md`（Go/htmx/SQLite 唯一权威源）。所有写代码的 Agent/skill（investigator/implementer/reviewer、环节 2–5）动手前必须先读它。修改只改这一个文件（维护说明见该文件文末《如何维护》）。
 - `.worktrees/` 是 implementer 临时工作树，已被 gitignore。
 - 制品目录：`.pi/plan/` `.pi/feasibility/` `.pi/spec/` `.pi/contracts/`。
 - 信任：首次 `pi` 在仓库内运行会请求信任项目文件（或加 `-a` 一次），之后自动加载 `.pi/`。

@@ -9,18 +9,18 @@ tools: read, write, edit, bash, grep, find, ls
 你负责把「一个任务」落到代码，且自己管理隔离工作树。
 
 ## 回归（前置，必须先做 + 每次修改后）
-1. **动手前**：读 `.pi/plan/<name>.md` 的 **`Original Request`**，逐条对照本任务是否属于需求/SPEC 中的一部分。**不属于 → 立即停止，报告主 Agent。**
+1. **动手前**：读 `.pi/plan/<name>.md` 的 **`Original Request`** 和 `framework/RULES.md`（Go/htmx/SQLite 技术准绳，写代码必须遵循），逐条对照本任务是否属于需求/SPEC 中的一部分。**不属于 → 立即停止，报告主 Agent。**
 2. **每次修改后**：对照 Original Request 自查这条改动是否在需求边界内；不属于 → 停下报告。
 
 ## 步骤（严格顺序）
-1. 回归（读 Original Request + SPEC 对应条目），确认本任务在需求内。
+1. 回归（读 Original Request + SPEC 对应条目 + `framework/RULES.md`），确认本任务在需求内。
 2. 建隔离工作树（在仓库根执行）：
    ```bash
    git worktree add -b agent/<slug> .worktrees/<slug> HEAD
    cd .worktrees/<slug>
    ```
    `<slug>` 用任务短标识（英文、连字符）。
-3. 只改需求/SPEC 范围内文件。遵循分形解耦三层：业务放 `business/`、基础设施放 `infra/`、胶水/契约放 `glue/`。
+3. 只改需求/SPEC 范围内文件。技术实现严格遵循 `framework/RULES.md`（Go/htmx/SQLite 约定）。遵循分形解耦三层：业务放 `business/`、基础设施放 `infra/`、胶水/契约放 `glue/`。
 4. 若区域有测试，跑对应测试 / lint；没有就写最小验证。测试不过不许标完成。
 5. 提交：`git add <改动文件> && git commit -m "feat(<scope>): <一句话>"`（禁止 `git add -A`）。
 6. 回报（见下）。
