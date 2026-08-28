@@ -1,0 +1,12 @@
+services:
+  harnessd:
+    build:
+      context: .
+      dockerfile: glue/deploy/Dockerfile
+    ports:
+      - "8100:8100"
+    environment:
+      - HARNESSD_ADDR=:8100
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
