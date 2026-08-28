@@ -20,8 +20,10 @@ allowed-tools: read subagent
 4. 判结果：
    - `VERDICT: PASS` → `RESULT: RETEST_PASS branch=<branch>`
    - `VERDICT: FAIL` → `RESULT: RETEST_FAIL branch=<branch> reason=<...>`，退回环节4修复后重走 4→5
+5. **循环上限**：4→5 循环累计 **≤2 轮**（全程实现尝试至多 4 次）。第 2 轮仍 `VERDICT: FAIL` → `RESULT: BLOCKED`，停下交人，不再自动回退。
 
 ## 铁律
 - 复测者只读、不改码；与被测产出者不同视角。
 - **找不到需求来源的改动 = 拒**（这是"回归"的硬判，不是主观印象）。
 - 全部任务 `RETEST_PASS` 后才允许进入环节6。
+- 达到循环上限必须 `BLOCKED` 停下，不许悄悄放行或无限重试。

@@ -24,7 +24,7 @@ framework/
 │   ├── assembly/              组装：routes(http) + main（接线+启动）
 │   ├── process/               启动/停止/健康检查脚本
 │   └── deploy/                Dockerfile + docker-compose.yml
-└── spec/                      SPEC 文档目录（对齐 Agent 生成，冻结后只读）
+└── spec/                      SPEC 文档目录（对齐 Agent 生成，冻结后只读；指引见下）
 ```
 
 ## 分层铁律

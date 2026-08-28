@@ -1,5 +1,5 @@
 ---
-name: 1-spec-alignment
+name: 1-plan-alignment
 description: "（环节1）审问：与用户对齐需求，产出 PLAN 到 .pi/plan/<name>.md。PLAN 里必须逐字留存「原始需求」，作为后续所有环节回归的锚。不写代码。"
 allowed-tools: read write question
 ---
