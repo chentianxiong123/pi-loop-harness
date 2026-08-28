@@ -3,3 +3,7 @@ _history/
 *.py
 tmp/
 framework/data/
+.worktrees/
+.pi/worktrees/
+*.agent-state.json
+outbox/
