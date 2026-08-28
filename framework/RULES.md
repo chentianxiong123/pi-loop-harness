@@ -67,12 +67,15 @@
 ```bash
 make build        # → bin/harnessd
 make run          # 编译 + 启动（默认 :8100，HARNESSD_ADDR 覆盖）
-go test ./...     # 测试（business 同目录 *_test.go）
+make test         # 全部单元测试（business/ 各域）
+make vet          # 静态检查
 glue/process/start.sh | stop.sh | health.sh
 docker compose -f glue/deploy/docker-compose.yml up
-curl localhost:8100/           # 页面
+curl localhost:8100/           # hello 页面（htmx 问候 + Alpine 折叠）
 curl localhost:8100/api/greet  # htmx 片段（计数递增）
 curl localhost:8100/api/count  # 纯文本计数
+curl localhost:8100/msgwall    # 留言板页面（全栈示例：表单写路径）
+curl -X POST -d 'author=张三&body=你好' localhost:8100/msgwall/new  # 发留言 → 列表片段
 ```
 
 > **worktree 提示（implementer/reviewer 必读）**：Agent 的 bash 每次调用是**新进程，`cd` 不跨调用持久**；read/write/edit 工具以**仓库根**为 cwd 基准。
