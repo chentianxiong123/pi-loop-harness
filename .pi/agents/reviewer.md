@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Independent review of a completed worktree branch. Inspects the diff, runs cheap checks, verifies against SPEC/contract, and MUST end with VERDICT: PASS or VERDICT: FAIL. Read-only, never modifies code.
+description: "Independent review of a completed worktree branch. Inspects the diff, runs cheap checks, verifies against SPEC/contract, and MUST end with VERDICT: PASS or VERDICT: FAIL. Read-only, never modifies code."
 tools: read, grep, find, ls, bash
 ---
 
