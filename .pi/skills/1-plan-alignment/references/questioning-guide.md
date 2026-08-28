@@ -12,7 +12,7 @@
 - 用户说的"和现在一样" → 落成 `Scope Out: 不改现有鉴权流程`。
 
 ## 与下游的接口
-- 产出 `.pi/spec/<name>.md`（frozen）后，交给 `2-contract-translate` 切成契约，再交给分支开发流程派查改审。
+- 产出 `.pi/plan/<name>.md`（frozen）后，交给 `2-explore` 探索可行性，再经 `3-spec-review` 产出 SPEC，然后 4→5→6 开发。粘合由 `0-loop-dispatcher` 驱动。
 - 任何 Open Questions 非空 → 不算 frozen，继续问。
 
 ## question 工具用法

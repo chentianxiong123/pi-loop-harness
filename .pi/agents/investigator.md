@@ -12,7 +12,7 @@ tools: read, grep, find, ls, bash
 - 一段 SPEC 切片 / 一个具体问题（由派发器通过 subagent 工具传入）
 
 ## 职责
-1. 读 `docs/fractal-decoupling.md`、`framework/RULES.md`（Go/htmx/SQLite 技术准绳）与 `spec/` 了解架构与契约约束。
+1. 读 `docs/fractal-decoupling.md`、`framework/RULES.md`（Go/htmx/SQLite 技术准绳）与 `.pi/spec/` 了解架构与契约约束（SPEC 已归档在项目级 `.pi/spec/`，`framework/spec/` 仅作指引）。
 2. 在仓库里定位相关文件、函数、接口、已有测试。
 3. 必要时用 `bash` 跑只读 git 命令（`git log`/`git grep`/`git diff`）与构建查询。
 4. 产出**压缩上下文简报**，供 implementer 直接使用，避免它重新探索。

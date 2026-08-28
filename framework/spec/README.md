@@ -1,12 +1,17 @@
-# SPEC
+# SPEC 目录（指引）
 
-本文档目录存放项目的 **SPEC**（对齐 Agent 生成、人确认后冻结的开发指引）。它定义系统要做什么，是业务库与契约文件的唯一依据。
+本目录**不是** SPEC 的权威存放处。项目级 SPEC 统一归档在
 
-- 位置：本目录每个业务域一个 MD 文件（如 `spec/disk-monitor.md`）。
-- 内容：功能（每 30 秒采集 / 数据持久化 / Web 展示 / 告警阈值…），不含实现细节。
-- 用途：树 Agent 开工前逐条对照，确认本任务属于 SPEC 的哪一条；审查 Agent 按 SPEC 逐条核对 diff。
-- 冻结后只读，修改需重新对齐。
+```
+.pi/spec/<name>.md
+```
 
-## 模板预置契约（本项目骨架内置能力）
+（`.pi/plan/`、`.pi/feasibility/`、`.pi/spec/` 为流水线制品目录，由 0-loop-dispatcher 驱动各环节产出。）
 
-业务函数 `business/hello.Greet` 是**功能占位的例子**，仅用于演示三层结构，不属于任何 SPEC；`glue/interfaces/` 下的契约文件与之配套，正文投放到正式业务时连同替换。
+存放约定：
+
+- 每个业务功能一个 MD 文件（如 `.pi/spec/disk-monitor.md`）。
+- 内容：需求可追溯表（每条 Acceptance Criterion 对应最初需求条目）、接口/契约、约束；不含实现细节。
+- 冻结后只读；修改需重新走对齐环节。
+
+本目录（`framework/spec/`）仅保留模板说明，业务 SPEC 勿写到这里。契约实现形状在 `glue/interfaces/`（SPEC 对齐后生成，冻结只读）。
