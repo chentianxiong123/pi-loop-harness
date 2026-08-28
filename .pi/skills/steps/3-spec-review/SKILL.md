@@ -1,5 +1,6 @@
 ---
 name: 3-spec-review
+disable-model-invocation: true
 description: "（环节3）审查出 SPEC：回归（先读原始需求）后，看最初需求 + 审查当前代码，结合前两份产出（PLAN、可行性报告），给出冻结 SPEC 到 .pi/spec/<name>.md。"
 allowed-tools: read write subagent
 ---

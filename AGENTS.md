@@ -6,18 +6,21 @@ skills + 扩展是开发流程层，随仓库就位，信任一次后用 `/skill
 
 ## 开发流程（8 步；总入口是 0-loop-dispatcher，bug 入口是 bug-triage）
 
-| # | skill | 环节 | 产出 |
-|---|---|---|---|
-| 0 | `/0-loop-dispatcher` | **总入口/编排** | 驱动全部环节 + 回归回退 + 断点续跑 |
-| 1 | `/1-plan-alignment` | 审问 | `.pi/plan/<name>.md`（frozen）+ 账本 |
-| 2 | `/2-explore` | 探索可行性 | `.pi/feasibility/<name>.md` 或 `INFEASIBLE`→回归 1 |
-| 3 | `/3-spec-review` | 审查 | `.pi/spec/<name>.md`（frozen） |
-| — | `/task-slice` | 切片+契约 | `.pi/tasks/<name>.md` + `glue/interfaces/**`（只读） |
-| 4 | `/4-implement` | 实施代码 | 每任务一个实现分支 + 自测 |
-| 5 | `/5-retest` | 复测 | `VERDICT: PASS/FAIL`（另一个 agent） |
-| 6 | `/6-merge` | 合并 | 并入主线 |
-| 7 | `/7-smoke` | 联调回归 | 起服务冒烟 + `.pi/smoke/<name>.md` + 补测试 |
-| B | `/bug-triage` | **bug 入口** | 症状→复现→根因→修复→回归→合并→冒烟 |
+> **skill 分层**：`.pi/skills/entries/` = 人类直接触发的入口（model 可见）；
+> `.pi/skills/steps/` = AI 内部环节（`disable-model-invocation: true`，只由入口编排显式 `/skill:` 调用，模型不会自行乱调）。
+
+| # | skill | 位置 | 环节 | 产出 |
+|---|---|---|---|---|
+| 0 | `/0-loop-dispatcher` | entries | **总入口/编排** | 驱动全部环节 + 回归回退 + 断点续跑 |
+| 1 | `/1-plan-alignment` | steps | 审问 | `.pi/plan/<name>.md`（frozen）+ 账本 |
+| 2 | `/2-explore` | steps | 探索可行性 | `.pi/feasibility/<name>.md` 或 `INFEASIBLE`→回归 1 |
+| 3 | `/3-spec-review` | steps | 审查 | `.pi/spec/<name>.md`（frozen） |
+| — | `/task-slice` | steps | 切片+契约 | `.pi/tasks/<name>.md` + `glue/interfaces/**`（只读） |
+| 4 | `/4-implement` | steps | 实施代码 | 每任务一个实现分支 + 自测 |
+| 5 | `/5-retest` | steps | 复测 | `VERDICT: PASS/FAIL`（另一个 agent） |
+| 6 | `/6-merge` | steps | 合并 | 并入主线 |
+| 7 | `/7-smoke` | steps | 联调回归 | 起服务冒烟 + `.pi/smoke/<name>.md` + 补测试 |
+| B | `/bug-triage` | entries | **bug 入口** | 症状→复现→根因→修复→回归→合并→冒烟 |
 
 ## 怎么开始
 
@@ -29,7 +32,7 @@ skills + 扩展是开发流程层，随仓库就位，信任一次后用 `/skill
 
 ## run-state 账本（状态唯一源）
 
-- 路径 `.pi/runs/<name>.json`（已 gitignore）；schema 单一源 `0-loop-dispatcher/references/run-state.md`。
+- 路径 `.pi/runs/<name>.json`（已 gitignore）；schema 单一源 `.pi/skills/entries/0-loop-dispatcher/references/run-state.md`。
 - 每个环节读账本确认 stage、结束时更新 stage/retry/tasks/events。
 - **断点续跑**：说"继续 <name>"，从账本 stage 处继续，重试计数不凭记忆。
 - 会话丢了不怕：plan/feasibility/spec/tasks/smoke 与账本都在磁盘，接得上。
