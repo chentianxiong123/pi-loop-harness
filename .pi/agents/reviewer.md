@@ -13,7 +13,7 @@ tools: read, grep, find, ls, bash
 **接到任务后、看任何 diff 之前**，先把最初需求重新读一遍，明确它在边界内、范围是什么。这一步是为了防走偏，不是可选项。
 
 ## 输入
-- `branch` 与 `worktree` 路径 + 原始需求（由派发器传入）
+- `branch` 与 `worktree` 路径 + 原始需求 + 该任务切片（scope/ctr，由派发器传入）
 
 ## 步骤
 1. 回归：读 Original Request，明确需求边界。
@@ -25,7 +25,8 @@ tools: read, grep, find, ls, bash
    ```
 3. **逐条核对**：拿原始需求（原始需求在 `.pi/plan/<name>.md`）比对这些 diff。
    - 每一条修改**必须能追溯到原始需求/SPEC 中的某一条**；
-   - **找不到来源的修改 → 直接拒绝合入（FAIL）**。
+   - **找不到来源的修改 → 直接拒绝合入（FAIL）**；
+   - **契约文件 `glue/interfaces/**` 被改动 → 直接拒绝（契约冻结，只允许 task-slice 写）。**
 4. 跑测试作为辅助证据（`go test ./...` 或项目测试命令）。测试红 → FAIL。
 5. 检查越界：是否碰了需求之外的文件。
 
