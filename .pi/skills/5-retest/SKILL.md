@@ -1,23 +1,27 @@
 ---
 name: 5-retest
-description: "5. 复测：看最初需求 + SPEC + 实现分支，派另一个 agent（reviewer）独立复测，必须有 VERDICT: PASS/FAIL。"
+description: "（环节5）复测：回归（先读原始需求）后，派另一个 agent（reviewer）拿最初需求逐条核对实现 diff，每一条必须能追溯到最初需求；找不到来源→拒。必须出 VERDICT: PASS/FAIL。"
 allowed-tools: read subagent
 ---
 
-# 5. 复测
+# 环节5 · 复测
 
-你找**另一个** agent（reviewer，与实现者不同的角色/视角）独立复测实现，对最初需求负责。
+**另一个** agent（reviewer，独立于实现者）对实现做最终核对。
+
+## 回归（前置，必须最先做）
+读 `.pi/plan/<name>.md` 的 **`Original Request`** + SPEC。
+复测的唯一准绳是**最初需求**：不是实现者的自述，不是 SPEC 之外的东西。
 
 ## 工作流
-1. 读 `.pi/spec/<name>.md`（frozen）+ `.pi/plan/<name>.md`（最初需求）。
-2. 拿到 `4-implement` 的 `branch`/`worktree`。
+1. 回归（读原始需求 + SPEC）。
+2. 拿到环节4的 `branch`/`worktree`。
 3. 派复测：`subagent` mode=single, agent=reviewer, agentScope=both,
-   task=<branch/worktree + 最初需求 + SPEC + "独立复测：逐条核对最初需求，跑整库测试（干净 checkout 优先），最后一行必须 VERDICT: PASS 或 VERDICT: FAIL">。
-4. 判结果（拿回 VERDICT）：
-   - `VERDICT: PASS` → `RESULT: RETEST_PASS branch=<branch>`。
-   - `VERDICT: FAIL` → `RESULT: RETEST_FAIL branch=<branch> reason=<...>`，并退回 `4-implement` 修复后重走复测。
+   task=<branch/worktree + 原始需求 + SPEC + "拿最初需求逐条核对 diff：每一条修改必须能追溯到最初需求/SPEC 的某一条；找不到来源的修改 → 拒绝。可跑测试作辅助证据。最后一行必须 VERDICT: PASS 或 VERDICT: FAIL — <原因>">。
+4. 判结果：
+   - `VERDICT: PASS` → `RESULT: RETEST_PASS branch=<branch>`
+   - `VERDICT: FAIL` → `RESULT: RETEST_FAIL branch=<branch> reason=<...>`，退回环节4修复后重走 4→5
 
 ## 铁律
-- 复测者与被测代码的产出者必须不是同一视角：审测人只读、不改码。
-- **回归 = 在干净 checkout 上跑整库测试的确定性 exit**，不是 reviewer 的主观印象；VERDICT 必须建立在真实测试输出上。
-- 全部任务 `RETEST_PASS` 之后，才允许进入 `6-merge`。
+- 复测者只读、不改码；与被测产出者不同视角。
+- **找不到需求来源的改动 = 拒**（这是"回归"的硬判，不是主观印象）。
+- 全部任务 `RETEST_PASS` 后才允许进入环节6。

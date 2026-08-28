@@ -1,26 +1,22 @@
 ---
 name: 1-spec-alignment
-description: "1. 审问：与用户对齐需求，产出 PLAN.md（含目标、范围、验收标准、约束、Open Questions）。不写代码。"
+description: "（环节1）审问：与用户对齐需求，产出 PLAN 到 .pi/plan/<name>.md。PLAN 里必须逐字留存「原始需求」，作为后续所有环节回归的锚。不写代码。"
 allowed-tools: read write question
 ---
 
-# 1. 审问 —— 产出 PLAN
+# 环节1 · 审问 —— 产出 PLAN
 
-你只做需求对齐，不写任何代码。目标：把用户松散的想法，变成一份**结构化的 PLAN**，作为后续所有环节的单一事实来源。
+你只做需求对齐，不写任何代码。
 
-## 铁律
-1. 只问不写代码。你可以写 `.pi/plan/<name>.md`，但绝不改 `framework/`。
-2. 复述确认。每轮提问后，先用自己的话复述理解的需求，等用户确认再继续。
-3. 列矛盾。发现需求冲突 / 缺失 / 歧义，显式列出，不许假装一致。
-4. PLAN 里的 Open Questions 非空 → 不算完成，继续问。
+## 回归铁律（所有环节共用）
+无论谁、在哪个环节、哪个环境，动手前都必须**先重新读一遍用户的原始需求**，对照自己要做的事是否在需求边界内。本环节的产出本身，就是要给后续每个环节留下"回归的锚"。
 
 ## 工作流
-1. 读 `docs/fractal-decoupling.md` 与 `framework/` 结构，了解架构约束（三层、端口 8100、强类型契约）。
-2. 识别需求中的歧义点、缺失项、隐含依赖。
-3. 需要用户选择时，优先用 `question` 工具；非交互模式直接对话提问。
-4. 把回答结构化为 PLAN（见 Output Contract），写入 `.pi/plan/<name>.md`。
-5. 让用户确认。确认后 `status: frozen`。
-6. 最后一行：`RESULT: PLAN_FROZEN path=.pi/plan/<name>.md`
+1. 听用户讲他的需求（最初需求）。
+2. **逐字**记录用户原话 → 存入 PLAN 的 `Original Request` 字段。这是全流程唯一不可篡改的锚。
+3. 用 `question` 工具（或对话）澄清歧义、缺失、矛盾；复述确认。
+4. 结构化为 PLAN，写入 `.pi/plan/<name>.md`，`status: frozen`。
+5. 产出后回归：对照 `Original Request` 检查 PLAN 有没有歪曲、漏掉、添油加醋。
 
 ## Output Contract（.pi/plan/<name>.md）
 ```markdown
@@ -28,21 +24,18 @@ allowed-tools: read write question
 status: frozen
 created: <date>
 
+## Original Request（原始需求，用户逐字原话）
+> <用户原话>
+
 ## Goal
-<一段话>
-
 ## Scope In
-- ...
-
 ## Scope Out (non-goals)
-- ...
-
 ## Acceptance Criteria
 - [ ] ...
-
 ## Constraints
 - 端口 8100；三层 business/infra/glue；契约在 glue/interfaces/
-
 ## Open Questions
 - （冻结后应为空）
 ```
+
+最后一行：`RESULT: PLAN_FROZEN path=.pi/plan/<name>.md`
