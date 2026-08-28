@@ -9,7 +9,8 @@
 ## 1. 技术栈总览
 
 - 语言：Go（module `pi-loop-harness/framework`，`go 1.26`，**最低版本 1.26**——`modernc.org/sqlite v1.57` 依赖此版本特性，低版本编译不过）
-- Web：标准库 `net/http` + `html/template` + **htmx 2.0.9**（服务端渲染，无任何前端框架/构建链）
+- Web：标准库 `net/http` + `html/template` + **htmx 2.0.9**（服务端渲染，数据/局部刷新）
+- 客户端 UI 状态：**Alpine.js 3**（CDN，无构建链）——只做视觉状态，分工红线见 §4.1
 - 样式：daisyUI 4（CDN 引入），`<html data-theme="dark">`
 - 存储：**SQLite**，驱动 `modernc.org/sqlite`（纯 Go，无 CGO），driver name 是 `"sqlite"`（不是 `sqlite3`）
 - 外部依赖：**仅** `modernc.org/sqlite` 一家。禁止再引入别的库（HTTP 用 stdlib、模板用 stdlib）。
@@ -44,6 +45,22 @@
 - 路由：统一在 `glue/assembly/http.go` 的 `registerRoutes(mux, db)` 注册。
 - handler 是纯胶水：取数（Store 契约）→ 调业务函数 → 渲染模板；不做业务判断。
 - 新增能力链路：`business/<域>/<函数>.go` → `glue/interfaces/business/` 加契约 → `infra/data` 加读写（若要持久化）→ `infra/web/templates/` 加片段 → `glue/assembly/http.go` 适配 + 注册路由。
+
+### 4.1 HTMX / Alpine.js 分工红线（铁律，不可越界）
+
+**一句话分工**：
+- **凡是需要跟服务器要数据 / 改数据（增删改查、分页、提交）→ 只用 HTMX。**
+- **凡是纯属界面视觉把戏（弹窗显隐、下拉菜单、暗黑模式、按钮 loading 态）→ 只用 Alpine.js。**
+
+**决策红线（触发判据）**：
+- 用 **HTMX**：只要触发后 URL 变了、数据库变了、或需要后端重新计算（哪怕只是刷新一个数字）。
+- 用 **Alpine.js**：只要触发后页面没刷新、URL 没变、浏览器没发请求（如点开折叠面板，纯粹给用户看的）。
+
+**死规矩（越界即灾难）**：
+- **后端数据（用户名、列表、任何来自 Go/DB 的值）永远不准放进 Alpine 的 `x-data`**。
+- 数据必须由 **Go 渲染** 或 **HTMX 替换** 进入页面；Alpine 只准碰 CSS 类名（`class`）与样式（`style`）。
+- Alpine handler 内禁止 `fetch`/`axios`/任何网络请求——一旦需要请求，改用 htmx 端点。
+- 违反任一条 = 脱离需求，reviewer 直接拒合。
 
 ## 5. 构建 / 进程 / 冒烟
 

@@ -26,6 +26,7 @@ tools: read, grep, find, ls, bash
    - 每一条修改**必须能追溯到原始需求/SPEC 中的某一条**；
    - **找不到来源的修改 → 直接拒绝合入（FAIL）**；
    - **契约文件 `glue/interfaces/**` 被改动 → 直接拒绝（契约冻结，只允许 task-slice 写）。**
+   - **HTMX/Alpine 分工红线（RULES §4.1）**：后端数据（用户名/列表/来自 Go/DB 的值）出现在 Alpine `x-data` 里 → 拒；Alpine handler 里出现 `fetch`/网络请求 → 拒；需要数据/提交却用 Alpine 而非 htmx → 拒。
 4. 跑测试作辅助证据：`bash` 用**单条命令**把 cd 带上（`cd <worktree> && go test ./...`）。测试红 → FAIL。
 5. 检查越界：是否碰了需求之外的文件。读 worktree 内文件时路径以仓库根为基准（如 `<worktree>/business/foo.go`）。
 
