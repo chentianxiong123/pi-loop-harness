@@ -17,11 +17,17 @@ tools: read, grep, find, ls, bash
 3. 必要时用 `bash` 跑只读 git 命令（`git log`/`git grep`/`git diff`）与构建查询。
 4. 产出**压缩上下文简报**，供 implementer 直接使用，避免它重新探索。
 
-## 输出（最后一段，结构化）
-- `findings`: 相关文件与行号（file:line）
-- `api_hints`: 要调用的接口 / 要实现的契约形状
-- `test_hints`: 现有测试位置、如何跑针对区域的测试
-- `risks`: 改动可能触碰的隐含依赖
-- `open_questions`: 需要澄清的点（无则空）
+## 输出（最后一段，结构化 JSON）
+分析后，**最后一行必须且只能是一个 JSON 对象**（无 markdown 代码块、无散文）：
+```json
+{
+  "findings": [{"file":"<path>:<line>", "note":"..."}],
+  "api_hints": ["..."],
+  "test_hints": ["..."],
+  "risks": ["..."],
+  "open_questions": []
+}
+```
+主 agent 通过 subagent 的 `[structured]` 读取此 JSON；确保合法 JSON、双引号、末行输出。
 
 绝不修改文件。不确定就显式标出，不要编造。

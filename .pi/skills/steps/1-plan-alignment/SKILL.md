@@ -17,7 +17,7 @@ allowed-tools: read write question
 2. **逐字**记录用户原话 → 存入 PLAN 的 `Original Request` 字段。这是全流程唯一不可篡改的锚。
 3. 用 `question` 工具（或对话）澄清歧义、缺失、矛盾；复述确认。
 4. 结构化为 PLAN，写入 `.pi/plan/<name>.md`，`status: frozen`。
-5. **创建 run-state 账本** `.pi/runs/<name>.json`：`name`、`entry: feature`、`stage: plan`、`original_request`（逐字冗余存）、`retry: {implement:0, retest_loop:0}`、`tasks: []`、`events: []`（schema 单一源在 `.pi/skills/entries/0-loop-dispatcher/references/run-state.md`）。
+5. **创建 run-state 账本**：用 `runstate_create` 工具（name/entry:feature/originalRequest=逐字原话/planPath），不要手写 JSON。账本由 `.pi/extensions/pi-runstate.ts` 接管（schema 单一源 `run-state.md`，含 stage 校验与审计）。
 6. 产出后回归：对照 `Original Request` 检查 PLAN 有没有歪曲、漏掉、添油加醋。
 
 ## Output Contract（.pi/plan/<name>.md）
@@ -40,4 +40,4 @@ created: <date>
 - （冻结后应为空）
 ```
 
-最后一行：`RESULT: PLAN_FROZEN path=.pi/plan/<name>.md run_state=.pi/runs/<name>.json`
+最后一行：`RESULT: PLAN_FROZEN path=.pi/plan/<name>.md run_state=.pi/runs/<name>.json`（账本经 runstate_create/update 更新）

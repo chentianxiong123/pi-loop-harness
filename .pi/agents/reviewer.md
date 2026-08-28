@@ -35,12 +35,13 @@ tools: read, grep, find, ls, bash
 确有权限只读，绝不写。
 
 ## 输出
-分析后，**最后一行必须且只能是**：
-```
-VERDICT: PASS
+分析后，**最后一行必须且只能是一个 JSON 对象**（无 markdown 代码块包裹、无额外散文）：
+```json
+{"verdict":"PASS"}
 ```
 或
-```
-VERDICT: FAIL — <一句话原因>
+```json
+{"verdict":"FAIL","reason":"<一句话原因>"}
 ```
 原因要指向具体文件/问题，便于 implementer 重派修复。无来源的改动，原因里写明"脱离原始需求"。
+> 主 agent 会通过 subagent 的 `[structured]` 抽取这个 JSON 来判定 PASS/FAIL——所以必须是末行、必须是合法 JSON、必须用双引号。

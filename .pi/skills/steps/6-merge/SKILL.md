@@ -10,12 +10,12 @@ allowed-tools: read write bash subagent
 所有任务都过复测，现在逐个并入主线。
 
 ## 回归（前置，必须最先做）
-读 `.pi/plan/<name>.md` 的 **`Original Request`** + 账本 `.pi/runs/<name>.json`。
+读 `.pi/plan/<name>.md` 的 **`Original Request`** + 账本（`runstate_get`，name=<name>）。
 做**全局回归**：把这一 feature 的所有改动拼起来，回看是否仍然落在最初需求边界内、有没有整体跑偏。
 **跑偏 → 停下报告，不许合并。**
 
 ## 前置检查
-- 账本存在，`stage: retest`；该 feature **所有**任务都是 `status: retested`；无 `pending`/`blocked`。
+- 账本存在，`stage: retest`；该 feature **所有**任务都是 `status: retested`；无 `pending`/`blocked`（`runstate_get` 校验）。
 - 逐一存在对应 `branch`/`worktree`，契约文件（`glue/interfaces/**`）实现期未被动（可 `git diff` 核对）。
 
 ## 工作流
@@ -25,7 +25,7 @@ allowed-tools: read write bash subagent
    git switch main
    git merge --no-ff <branch>
    ```
-   每并完一个，账本该任务 `status: merged`，`events` 追加"MERGED t<id>"。
+   每并完一个，`runstate_update`（taskStatus: {id, status: merged}, event=MERGED t<id>）。
 3. 冲突处理（不闷头解）：
    - **冲突文件若在某任务切片的 `scope` 内** → 派那个 implementer 在 worktree 里解（`git -C .worktrees/<slug> merge main` 或 `git -C .worktrees/<slug> rebase main` 后解），改完**重走 4→5 复测**再并。
    - **冲突文件不在任何任务 scope 内（如 `glue/assembly/` 路由注册点）** → 停下，把冲突文件与两侧 diff 报给主 agent，主 agent 决定派哪个任务接管或人工处理；不得自行决定删谁留谁。
@@ -35,7 +35,7 @@ allowed-tools: read write bash subagent
    git worktree remove --force .worktrees/<slug>
    git branch -d <branch>
    ```
-5. 更新账本 `stage: merge`，`events` 追加"ALL_MERGED"。
+5. 更新账本 `runstate_update`（stage=merge, event=ALL_MERGED）。
 6. 末行：`RESULT: MERGED feature=<name> branches=<n> run_state=.pi/runs/<name>.json`
 
 ## 铁律

@@ -10,17 +10,18 @@ allowed-tools: read write subagent
 **另一个** agent（reviewer，独立于实现者）对每个任务的实现做最终核对。
 
 ## 回归（前置，必须最先做）
-读 `.pi/plan/<name>.md` 的 **`Original Request`** + SPEC + `framework/RULES.md` + 账本 `.pi/runs/<name>.json`（确认 `stage: implement`，读到实现期填好的 `branch`/`worktree`）。
+读 `.pi/plan/<name>.md` 的 **`Original Request`** + SPEC + `framework/RULES.md` + 账本（`runstate_get`，name=<name>, expectStage=implement，读到实现期填好的 `branch`/`worktree`）。
 复测的唯一准绳是**最初需求**：不是实现者的自述，不是 SPEC 之外的东西。技术准绳是 RULES.md：违反 RULES 的改动等同脱离需求。
 
 ## 工作流
-1. 回归（读原始需求 + SPEC + 账本）。
+1. 回归（读原始需求 + SPEC + `runstate_get`）。
 2. 对账本里每项 `status: implemented` 的任务派复测：`subagent` mode=single, agent=reviewer, agentScope=both,
-   task=<branch/worktree + 原始需求 + SPEC 对应条目 + 该任务切片（scope/ctr）+ "技术准绳 framework/RULES.md"+ "拿最初需求逐条核对 diff：每一条修改必须能追溯到最初需求/SPEC 的某一条；找不到来源的修改 → 拒绝。契约文件改动也拒绝（契约冻结）。注意：bash 每次调用是新进程 cd 不持久，看 diff 用 git -C <worktree> diff main...<branch>，跑测试用 cd <worktree> && go test ./...（单条命令）。可跑测试作辅助证据。最后一行必须 VERDICT: PASS 或 VERDICT: FAIL — <原因>">。
-3. 判每项结果：
-   - `VERDICT: PASS` → 账本该任务 `status: retested`，`RESULT: RETEST_PASS branch=<branch>`
-   - `VERDICT: FAIL` → 账本 `status: pending`（退回），`RESULT: RETEST_FAIL branch=<branch> reason=<...>`，退回环节4修复后重走 4→5
-4. **循环上限**：4→5 循环累计 **≤2 轮**（账本 `retry.retest_loop` 记账；全程实现尝试至多 4 次）。第 2 轮仍 `VERDICT: FAIL` → `RESULT: BLOCKED`，停下交人，不再自动回退。
+   task=<branch/worktree + 原始需求 + SPEC 对应条目 + 该任务切片（scope/ctr）+ "技术准绳 framework/RULES.md"+ "拿最初需求逐条核对 diff：每一条修改必须能追溯到最初需求/SPEC 的某一条；找不到来源的修改 → 拒绝。契约文件改动也拒绝（契约冻结）。注意：bash 每次调用是新进程 cd 不持久，看 diff 用 git -C <worktree> diff main...<branch>，跑测试用 cd <worktree> && go test ./...（单条命令）。可跑测试作辅助证据。**最后一行必须输出一个 JSON 对象：{"verdict":"PASS"|"FAIL","reason":"一句话原因"}，不要输出 markdown 代码块包裹之外的散文**">。
+3. **读结构化 verdict**：subagent 会从 reviewer 末行 JSON 抽取 `[structured] {...}`。**不要靠"最后一行文本"猜**——读 `[structured]` 里的 `verdict` 字段判定 PASS/FAIL。
+4. 判每项结果：
+   - `verdict: PASS` → `runstate_update`（taskStatus: {id, status: retested}, event=RETEST_PASS），`RESULT: RETEST_PASS branch=<branch>`
+   - `verdict: FAIL` → `runstate_update`（taskStatus: {id, status: pending}, event=RETEST_FAIL reason），`RESULT: RETEST_FAIL branch=<branch> reason=<...>`，退回环节4修复后重走 4→5
+5. **循环上限**：4→5 循环累计 **≤2 轮**（`runstate_update` retry.retest_loop 记账；全程实现尝试至多 4 次）。第 2 轮仍 FAIL → `runstate_update`（stage=blocked）+ `RESULT: BLOCKED`，停下交人，不再自动回退。
 
 ## 铁律
 - 复测者只读、不改码；与被测产出者不同视角。

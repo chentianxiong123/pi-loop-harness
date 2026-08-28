@@ -16,7 +16,7 @@ allowed-tools: read write bash subagent
 ## 输入
 1. `.pi/plan/<name>.md`（frozen，尤其 `Original Request`）
 2. `.pi/spec/<name>.md`（frozen）
-3. run-state 账本 `.pi/runs/<name>.json`（读完更新）
+3. run-state 账本：`runstate_get`（name=<name>, expectStage=spec）读完后更新
 
 ## 工作流
 1. 回归 + 读齐输入。
@@ -27,7 +27,7 @@ allowed-tools: read write bash subagent
    - 改动面优先按三层切（纯 business 改动 / glue 契约 / infra 持久化与模板 / assembly 路由），避免撞车。
    - 契约文件（`glue/interfaces/**`）只由本环节生成，是只读锚；implementation 不得改契约。
 5. **生成契约**：依 SPEC 的 `Interface / Contract` 段，为每项任务产出 `glue/interfaces/` 下对应 .go（只声明形状），并加编译期锚（如 `var _ = Type{}`）。契约对齐 SPEC，不写实现。
-6. 写 `.pi/tasks/<name>.md`（见下），并把每项任务 `id/criterion/scope/ctr/branch` 同步进账本 `tasks[]`（`status: pending`）。
+6. 写 `.pi/tasks/<name>.md`（见下），并用 `runstate_update` 把每项任务同步进账本 tasks[]（status: pending，每项一个 taskStatus 调用，event=SLICED t<id>）。
 7. 产出后回归：回看任务并集 ⊆ 原始需求、契约形状 = 前序产出，无跑偏。
 
 ## Output Contract（.pi/tasks/<name>.md）
@@ -45,6 +45,6 @@ base_spec: .pi/spec/<name>.md
 ```
 
 ## 更新账本
-`stage: tasks`，`tasks[]` 全 `pending`，`events` 追加"TASKS_SLICED"。
+`runstate_update`：stage=tasks，event=TASKS_SLICED。对每项任务逐个 taskStatus（pending）写入账本。
 
 末行：`RESULT: TASKS_SLICED path=.pi/tasks/<name>.md`
