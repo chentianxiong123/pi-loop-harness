@@ -17,12 +17,15 @@ tools: read, write, edit, bash, grep, find, ls
 2. 建隔离工作树（在仓库根执行）：
    ```bash
    git worktree add -b agent/<slug> .worktrees/<slug> HEAD
-   cd .worktrees/<slug>
    ```
    `<slug>` 用任务短标识（英文、连字符）。
+   > **路径陷阱（重要）**：你的一切工具（read/write/edit/bash）以**仓库根**为 cwd 基准；`bash` 每次调用是新进程，`cd` 不跨调用持久。
+   > - 读写 worktree 内文件：路径带前缀 `.worktrees/<slug>/...`（相对仓库根）。
+   > - git 操作：一律 `git -C .worktrees/<slug> <cmd>`，不要先 cd 再 git。
+   > - 跑测试：单条命令把 cd 带上，如 `cd .worktrees/<slug> && go test ./...`。
 3. 只改任务切片（`scope`）内文件。**契约文件 `glue/interfaces/**` 是只读锚，绝不改动**。技术实现严格遵循 `framework/RULES.md`（Go/htmx/SQLite 约定）。遵循分形解耦三层：业务放 `business/`、基础设施放 `infra/`、胶水/契约放 `glue/`。
-4. 若区域有测试，跑对应测试 / lint；没有就写最小验证。测试不过不许标完成。
-5. 提交：`git add <改动文件> && git commit -m "feat(<scope>): <一句话>"`（禁止 `git add -A`）。
+4. 若区域有测试，跑对应测试 / lint；没有就写最小验证。测试不过不许标完成（`cd .worktrees/<slug> && go test ./...`）。
+5. 提交：`git -C .worktrees/<slug> add <改动文件> && git -C .worktrees/<slug> commit -m "feat(<scope>): <一句话>"`（禁止 `git add -A`）。
 6. 回报（见下）。
 
 ## 铁律

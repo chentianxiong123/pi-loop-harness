@@ -16,7 +16,7 @@ allowed-tools: read write subagent
 ## 工作流
 1. 回归（读原始需求 + SPEC + 账本）。
 2. 对账本里每项 `status: implemented` 的任务派复测：`subagent` mode=single, agent=reviewer, agentScope=both,
-   task=<branch/worktree + 原始需求 + SPEC 对应条目 + 该任务切片（scope/ctr）+ "技术准绳 framework/RULES.md"+ "拿最初需求逐条核对 diff：每一条修改必须能追溯到最初需求/SPEC 的某一条；找不到来源的修改 → 拒绝。契约文件改动也拒绝（契约冻结）。可跑测试作辅助证据。最后一行必须 VERDICT: PASS 或 VERDICT: FAIL — <原因>">。
+   task=<branch/worktree + 原始需求 + SPEC 对应条目 + 该任务切片（scope/ctr）+ "技术准绳 framework/RULES.md"+ "拿最初需求逐条核对 diff：每一条修改必须能追溯到最初需求/SPEC 的某一条；找不到来源的修改 → 拒绝。契约文件改动也拒绝（契约冻结）。注意：bash 每次调用是新进程 cd 不持久，看 diff 用 git -C <worktree> diff main...<branch>，跑测试用 cd <worktree> && go test ./...（单条命令）。可跑测试作辅助证据。最后一行必须 VERDICT: PASS 或 VERDICT: FAIL — <原因>">。
 3. 判每项结果：
    - `VERDICT: PASS` → 账本该任务 `status: retested`，`RESULT: RETEST_PASS branch=<branch>`
    - `VERDICT: FAIL` → 账本 `status: pending`（退回），`RESULT: RETEST_FAIL branch=<branch> reason=<...>`，退回环节4修复后重走 4→5

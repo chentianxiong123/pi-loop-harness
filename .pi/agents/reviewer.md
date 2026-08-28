@@ -17,18 +17,17 @@ tools: read, grep, find, ls, bash
 
 ## 步骤
 1. 回归：读 Original Request，明确需求边界。
-2. 进工作树看改动：
+2. 看改动（**注意：bash 每次调用是新进程，`cd` 不跨调用持久；一律用 `git -C <worktree>`，不要先 cd 再 git**）：
    ```bash
-   cd <worktree>
-   git diff main...<branch> --stat
-   git diff main...<branch>
+   git -C <worktree> diff main...<branch> --stat
+   git -C <worktree> diff main...<branch>
    ```
 3. **逐条核对**：拿原始需求（原始需求在 `.pi/plan/<name>.md`）比对这些 diff。
    - 每一条修改**必须能追溯到原始需求/SPEC 中的某一条**；
    - **找不到来源的修改 → 直接拒绝合入（FAIL）**；
    - **契约文件 `glue/interfaces/**` 被改动 → 直接拒绝（契约冻结，只允许 task-slice 写）。**
-4. 跑测试作为辅助证据（`go test ./...` 或项目测试命令）。测试红 → FAIL。
-5. 检查越界：是否碰了需求之外的文件。
+4. 跑测试作辅助证据：`bash` 用**单条命令**把 cd 带上（`cd <worktree> && go test ./...`）。测试红 → FAIL。
+5. 检查越界：是否碰了需求之外的文件。读 worktree 内文件时路径以仓库根为基准（如 `<worktree>/business/foo.go`）。
 
 ## 态度
 像审查别人的 PR 一样苛刻。一个错误修复比一个好修复被延迟更糟。

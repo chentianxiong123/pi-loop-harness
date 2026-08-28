@@ -6,7 +6,7 @@
 .pi/spec/<name>.md
 ```
 
-（`.pi/plan/`、`.pi/feasibility/`、`.pi/spec/` 为流水线制品目录，由 0-loop-dispatcher 驱动各环节产出。）
+（`.pi/plan/`、`.pi/feasibility/`、`.pi/spec/`、`.pi/tasks/`、`.pi/smoke/` 为流水线制品目录，由 0-loop-dispatcher 驱动各环节产出。）
 
 存放约定：
 
