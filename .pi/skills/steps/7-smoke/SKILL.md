@@ -26,10 +26,11 @@ allowed-tools: read write bash subagent
    ```
    htmx 片段端点返回 200 + HTML 片段（不是 JSON）；纯数据端点返回 text。对照 SPEC/需求核对每条端点行为。
 3. **逐条验收**：拿最初需求和 SPEC 的每条 Acceptance Criterion，跑一遍对应端点/行为，记录证据。
-4. **补一组测试**：为本次 feature 补 `*_test.go`（business/ 直测；有 DB 的用临时库），保证 `go test ./...` 全绿 —— 这就是本轮回归的自动化留证。
-5. 写 `.pi/smoke/<name>.md`：验收证据表（最初需求条目 × 可观测证据 × 测试名）+ curl 输出片段。
-6. 账本更新 `stage: smoke`，`events` 追加"SMOKE"。
-7. 结束进程：杀掉后台服务（curl 之后 kill）。
+4. **Alpine 盲区声明**：curl 无法驱动 Alpine 视觉状态（弹窗显隐/折叠/loading 态）。含 Alpine 的页面：验收证据注明"客户端视觉行为由环节5 reviewer 静态核查（分工红线 RULES §4.1）+ 人最终确认"，不把"curl 看不到"误判为失败。
+5. **补一组测试**：为本次 feature 补 `*_test.go`（business/ 直测；有 DB 的用临时库），保证 `go test ./...` 全绿 —— 这就是本轮回归的自动化留证。
+6. 写 `.pi/smoke/<name>.md`：验收证据表（最初需求条目 × 可观测证据 × 测试名）+ curl 输出片段 + Alpine 盲区说明。
+7. 账本更新 `stage: smoke`，`events` 追加"SMOKE"。
+8. 结束进程：杀掉后台服务（curl 之后 kill）。
 
 ## 判结果
 - 全部通过 → 末行：`RESULT: SMOKE_PASS`

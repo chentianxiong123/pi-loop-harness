@@ -6,5 +6,17 @@
                 hx-get="/api/greet"
                 hx-target="#greeting-box"
                 hx-swap="outerHTML">再问候一次</button>
+
+        <div class="divider"></div>
+
+        <div x-data="{ open: false }" class="w-full text-left">
+            <button class="btn btn-ghost btn-sm w-full"
+                    @click="open = !open">Alpine 折叠面板（纯视觉）</button>
+            <div x-show="open" x-transition
+                 class="mt-2 rounded-lg bg-base-200 p-3 text-sm">
+                Alpine 只碰 class/style，不碰任何后端数据。
+                数据一律由 Go 渲染或 HTMX 替换（分工红线 RULES §4.1）。
+            </div>
+        </div>
     </div>
 </div>
