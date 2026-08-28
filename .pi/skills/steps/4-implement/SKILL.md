@@ -17,7 +17,7 @@ allowed-tools: read write subagent
 1. 回归（读原始需求 + SPEC + `framework/RULES.md` + 账本 tasks）。
 2. 对账本里每项 `status: pending` 的任务：
    - 派实现：`subagent` mode=single, agent=implementer, agentScope=both,
-     task=<该任务切片（criterion/scope/ctr 契约只读）+ 原始需求 + SPEC 对应条目 + "技术栈规则必须遵循 framework/RULES.md；契约 .go 在 glue/interfaces/ 只读不可改；在隔离 worktree 实现并自测，自测通过再 commit">。
+     task=<该任务切片（criterion/scope/ctr 契约只读）+ 原始需求 + SPEC 对应条目 + "技术栈规则必须遵循 framework/RULES.md；契约 .go 在 glue/interfaces/ 只读不可改；在隔离 worktree 实现并自测，自测通过再 commit；注意：bash 每次调用是新进程 cd 不持久，git 一律用 git -C .worktrees/<slug>，读改文件路径以仓库根为基准带 .worktrees/<slug>/ 前缀">。
    - implementer 自己 `git worktree add -b agent/<slug> .worktrees/<slug> HEAD`，实现、自测、commit，回报 `branch`/`worktree`。
    - 多任务可 `subagent` mode=parallel 并发（各用自己的 worktree，文件不重叠）。
 3. **每次修改后回归**：implementer 每改一处，对照 SPEC/原始需求自查——这条改动是否属于需求的一部分？不属于 → 停止报告。落实在给 implementer 的 task 指令里。

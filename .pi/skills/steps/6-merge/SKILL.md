@@ -26,7 +26,10 @@ allowed-tools: read write bash subagent
    git merge --no-ff <branch>
    ```
    每并完一个，账本该任务 `status: merged`，`events` 追加"MERGED t<id>"。
-3. 冲突 → 停下报告；必要时派 implementer 修复后重走复测。
+3. 冲突处理（不闷头解）：
+   - **冲突文件若在某任务切片的 `scope` 内** → 派那个 implementer 在 worktree 里解（`git -C .worktrees/<slug> merge main` 或 `git -C .worktrees/<slug> rebase main` 后解），改完**重走 4→5 复测**再并。
+   - **冲突文件不在任何任务 scope 内（如 `glue/assembly/` 路由注册点）** → 停下，把冲突文件与两侧 diff 报给主 agent，主 agent 决定派哪个任务接管或人工处理；不得自行决定删谁留谁。
+   - 冲突解决须回归：解完回看仍落在原始需求边界内。
 4. 全部并完、契约文件现状与 task-slice 产物一致后，清理已并入分支的 worktree：
    ```bash
    git worktree remove --force .worktrees/<slug>

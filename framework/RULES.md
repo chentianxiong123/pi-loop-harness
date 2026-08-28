@@ -8,7 +8,7 @@
 
 ## 1. 技术栈总览
 
-- 语言：Go（module `pi-loop-harness/framework`，`go 1.26`）
+- 语言：Go（module `pi-loop-harness/framework`，`go 1.26`，**最低版本 1.26**——`modernc.org/sqlite v1.57` 依赖此版本特性，低版本编译不过）
 - Web：标准库 `net/http` + `html/template` + **htmx 2.0.9**（服务端渲染，无任何前端框架/构建链）
 - 样式：daisyUI 4（CDN 引入），`<html data-theme="dark">`
 - 存储：**SQLite**，驱动 `modernc.org/sqlite`（纯 Go，无 CGO），driver name 是 `"sqlite"`（不是 `sqlite3`）
@@ -57,6 +57,11 @@ curl localhost:8100/           # 页面
 curl localhost:8100/api/greet  # htmx 片段（计数递增）
 curl localhost:8100/api/count  # 纯文本计数
 ```
+
+> **worktree 提示（implementer/reviewer 必读）**：Agent 的 bash 每次调用是**新进程，`cd` 不跨调用持久**；read/write/edit 工具以**仓库根**为 cwd 基准。
+> - git 一律 `git -C .worktrees/<slug> <cmd>`；
+> - 读改 worktree 文件路径带 `.worktrees/<slug>/` 前缀；
+> - 跑测试用单条命令 `cd .worktrees/<slug> && go test ./...`。
 
 ## 6. 新增一个功能的完整最小步骤（Agent 照此落地）
 
