@@ -1,5 +1,6 @@
 ---
 name: 7-smoke
+disable-model-invocation: true
 description: "（环节7）最终联调回归：合并后 make run 起服务 + curl 冒烟 + 对照原始需求逐条验收 + 补一组测试，写 .pi/smoke/<name>.md。回归：先读原始需求。"
 allowed-tools: read write bash subagent
 ---

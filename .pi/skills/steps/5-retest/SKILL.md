@@ -1,5 +1,6 @@
 ---
 name: 5-retest
+disable-model-invocation: true
 description: "（环节5）复测：回归（先读原始需求）后，对每个任务派另一个 agent（reviewer）拿最初需求逐条核对实现 diff，每一条必须能追溯到最初需求；找不到来源→拒。必须出 VERDICT: PASS/FAIL。"
 allowed-tools: read write subagent
 ---

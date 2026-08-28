@@ -1,5 +1,6 @@
 ---
 name: task-slice
+disable-model-invocation: true
 description: "（环节4首步）把冻结 SPEC 切成任务清单写 .pi/tasks/<name>.md，每个任务=一个隔离 worktree + 非重叠文件集，并同步生成 glue/interfaces/ 契约文件（冻结只读）。回归：先读原始需求。"
 allowed-tools: read write bash subagent
 ---

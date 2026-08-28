@@ -1,5 +1,6 @@
 ---
 name: 2-explore
+disable-model-invocation: true
 description: "（环节2）探索可行性：回归（先读原始需求）后，派 investigator 根据 PLAN 探索当前代码是否支持。可行→报告注意点写 .pi/feasibility/；有问题→回归提问（附 reason 回到环节1）。"
 allowed-tools: read subagent
 ---

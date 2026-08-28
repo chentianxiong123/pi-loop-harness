@@ -1,5 +1,6 @@
 ---
 name: 4-implement
+disable-model-invocation: true
 description: "（环节4）实施代码：回归（先读原始需求确认边界）后，对 task-slice 的每项任务派 implementer 在隔离 worktree 实现并自测，回报 branch/worktree。"
 allowed-tools: read write subagent
 ---

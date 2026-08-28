@@ -1,5 +1,6 @@
 ---
 name: 6-merge
+disable-model-invocation: true
 description: "（环节6）合并：全部任务 RETEST_PASS 后，回归（先读原始需求）做全局确认没跑偏，再逐个并入主线，清理 worktree，并核对契约文件最终形态。"
 allowed-tools: read write bash subagent
 ---
