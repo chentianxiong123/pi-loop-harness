@@ -1,0 +1,76 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/**", "public/build/**", "build/**"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "check-types": {
+      "dependsOn": ["^check-types"]
+    },
+    "dev": {
+      "cache": false,
+      "interactive": true
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate:deploy": {
+      "cache": false
+    },
+    "db:migrate:create": {
+      "cache": false,
+      "interactive": true
+    },
+    "db:studio": {
+      "cache": false
+    },
+    "db:reset": {
+      "interactive": true,
+      "cache": false
+    },
+    "generate": {
+      "dependsOn": ["^generate"]
+    }
+  },
+  "globalDependencies": [".env"],
+  "globalEnv": [
+    "NODE_ENV",
+    "REMIX_APP_PORT",
+    "DATABASE_URL",
+    "DIRECT_URL",
+    "APP_ORIGIN",
+    "LOGIN_ORIGIN",
+    "APP_ENV",
+    "POSTGRES_DB",
+    "NEO4J_URI",
+    "NEO4J_USERNAME",
+    "NEO4J_PASSWORD",
+    "OPENAI_API_KEY",
+    "OPENAI_BASE_URL",
+    "OPENAI_API_MODE",
+    "MODEL",
+    "EMBEDDING_MODEL",
+    "EMBEDDING_MODEL_SIZE",
+    "EMBEDDING_API_KEY",
+    "OLLAMA_URL",
+    "CHAT_PROVIDER",
+    "EMBEDDINGS_PROVIDER",
+    "RERANK_PROVIDER",
+    "COHERE_API_KEY",
+    "RERANK_API_KEY",
+    "RERANK_BASE_URL",
+    "RERANK_MODEL",
+    "GRAPH_PROVIDER",
+    "VECTOR_PROVIDER",
+    "MODEL_PROVIDER",
+    "AWS_REGION",
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY"
+  ]
+}
