@@ -1,6 +1,7 @@
-# 项目框架选型研究：若依 × SpringBoot → Go
+# 应用模板选型研究：若依 × SpringBoot → Go
 
-> 目的：为 pi-loop-harness 搭建"项目框架"（GO + SQLite + HTMX，类比 SpringBoot / 若依）做准备。
+> 目的：为 `framework/` 搭建 Go 应用项目骨架（类比 SpringBoot / 若依）做选型研究。
+> 注意：`framework/` 是被平台监管的**应用模板**，不是平台本身。平台核心在 `.pi/`（TypeScript）。
 > 研究方式：SpringBoot 核心机制 + 若依结构拆解 + Go 生态对照。
 > 研究日期：2026-08-27
 
@@ -199,7 +200,7 @@ Controller extends BaseController，继承 `startPage/getDataTable/toAjax` 等�
 
 ---
 
-## 四、映射到我们的 GO 框架（设计启示）
+## 四、映射到应用模板（设计启示）
 
 ### 4.1 我们与若依的差异
 

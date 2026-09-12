@@ -1,7 +1,8 @@
-# framework — GO 项目框架模板
+# framework — Go 应用项目模板
 
 按《分形解耦架构》组织的工程骨架。三层职责边界清晰，配合契约与 SPEC。
 
+> 注意：`framework/` 是被平台监管的**应用项目模板**，不是平台本身。平台核心在 `.pi/`（TypeScript / Pi 插件）。
 > **技术栈规则在 `framework/RULES.md`**（Go/htmx/SQLite 唯一权威源），Agent 动手前先读它；本文件只讲结构。
 
 ## 结构

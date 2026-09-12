@@ -2,7 +2,7 @@
 
 > 本文档汇总本机全部相关文档，收敛为一张蓝图。
 > 综合来源：
-> - `docs/two-frameworks.md`（双框架总纲）
+> - `docs/two-frameworks.md`（架构总纲）
 > - `docs/docmap-ai-framework.md`（资产索引）
 > - `~/文档/杂/Harness工程宣言.md`
 > - `~/文档/杂/AI开发框架共识与Harness设计.md`
@@ -18,21 +18,20 @@
 
 ## 一、一句话蓝图
 
-> **搭一个可以并发进行、自动进行、可以有银弹的软件工程项目** —— 用「AI 框架（harness + loop）」驱动，用「GO 项目框架（SpringBoot/若依式骨架）」承载。人写循环，AI 干活，做得完、不停工、不跑偏。
+> **搭一个 agent 控制监管平台** —— 平台核心在 `.pi/`（TypeScript，Pi 插件），监管 agent 干活全过程。`framework/`（Go + HTMX + SQLite）是可选的应用项目骨架模板，被平台监管，不是平台本身。人写循环，AI 干活，做得完、不停工、不跑偏。
 
 ---
 
-## 二、两个框架（全图核心）
+## 二、平台与模板（全图核心）
 
-| | AI 框架 | GO 项目框架 |
+| | `.pi/` 平台核心 | `framework/` 应用模板 |
 |---|---------|-----------|
-| **本质** | 马具（约束工程）+ loop（循环工程） | 应用工程骨架，类比 SpringBoot / 若依 |
-| **性质** | 方法论，与语言无关 | 技术实现底座 |
-| **技术栈** | 不绑定 | **GO + SQLite + HTMX**（+ templ + daisyUI + SSE） |
-| **回答** | "AI 怎么自主、可靠地干活" | "落地成什么工程结构" |
-| **承载** | 灵魂（引擎） | 骨架（容纳引擎） |
-
-> 两者不冲突，反而互补：若依给模板和路径，AI 框架给原则和边界。
+| **是什么** | agent 控制监管平台本体 | Go 应用项目骨架模板 |
+| **性质** | 核心 — 平台本身 | 可选 — 模板之一 |
+| **语言** | TypeScript | Go |
+| **运行时** | Pi agent (Node.js) | 独立二进制 |
+| **回答** | "agent 怎么自主、可靠地干活" | "被监管的目标工程长什么样" |
+| **可替换** | 不行 | 可以换成 TS/Python/Rust 骨架 |
 
 ---
 
@@ -133,7 +132,9 @@ Skills 体系演进（V1 胖 skill → V4 瘦协议）：
 
 ---
 
-## 四、GO 项目框架
+## 四、应用模板：`framework/`（Go）
+
+> **framework/ 是被平台监管的目标工程骨架模板，不是平台的一部分。**
 
 ### 4.1 为什么要 Go
 
@@ -158,29 +159,15 @@ Skills 体系演进（V1 胖 skill → V4 瘦协议）：
 
 ### 4.3 若依感：工程骨架该有的
 
-类比 SpringBoot/若依提供开箱即用的底座：数据库、配置、API 壳、部署形态、通用 CRUD/权限。GO 框架同样提供稳定工程底座，**让 AI 引擎直接入驻**。
+类比 SpringBoot/若依提供开箱即用的底座：数据库、配置、API 壳、部署形态、通用 CRUD/权限。应用模板同样提供稳定工程底座，**让 AI 引擎直接入驻**。
 
-### 4.4 Harness 载体：以 Pi 插件为核心
+### 4.4 模板定位
 
-> **开发形态确认（2026-08-27）：constraint/loop 引擎全部实现为 Pi 插件（TypeScript），Pi 是实际干活的 agent。**
+**framework/ 是可选的目标工程骨架。** 平台不依赖它，平台能监管任何项目。
 
-Pi = `@earendil-works/pi-coding-agent`（本机 `pi 0.84.2`，数据 `~/.pi/agent`）。它自带完整扩展系统，恰好提供约束工程所需的全部事件拦截点：
+用 Go 做模板的理由：单一二进制、显式无魔术、AI 友好（推理距离短）、嵌入式 SQLite 零运维。
 
-| 约束工程 | Pi 插件事件 | 能力 |
-|---------|------------|------|
-| **工具门禁** | `pi.on("tool_call")` | 可改 `event.input`，可 `{ block, reason, terminate }` 拦截 |
-| **上下文锁** | `pi.on("context")` | 每轮 LLM 调用前过滤/注入 messages |
-| **输出契约** | `pi.on("tool_result")` / `message_end` / `turn_end` | 修改结果、替换消息、判 verify |
-| **Spec 注入** | `before_agent_start` | 注入 message + 改 system prompt |
-| **状态持久化** | `pi.appendEntry()` | 跨重启存活（外部 State）|
-| **编排指令** | `pi.registerCommand()` | `/loop` `/workspace` 等自定义命令 |
-| **子 agent / 事件触发** | `pi.registerTool()` + RPC | 工作间协调、多 agent 调度 |
-
-落地点：`~/.pi/agent/extensions/loop-engine/`（已建空目录，入口 `index.ts`）。
-
-**由此澄清"Go vs TS"**：不是二选一，是分层——
-- **Harness/loop 引擎** = Pi 插件（TS），约束/循环逻辑跑在 Pi 里
-- **GO 项目框架** = 旁边工程骨架层（SQLite/HTMX/daemon），承载插件驻留
+用其他语言的模板也完全可以：TS/Python/Rust 骨架同样被 `.pi/` 平台监管。模板选择与被监管的工程无关。
 
 ---
 
@@ -194,9 +181,9 @@ Pi = `@earendil-works/pi-coding-agent`（本机 `pi 0.84.2`，数据 `~/.pi/agen
 
 ### 待落地（执行层）
 1. **Spec 格式**：YAML/JSON 结构定义（goal/scope/constraints/tasks/verify/prior-decisions）
-2. **loop-engine 插件**：`~/.pi/agent/extensions/loop-engine/index.ts`——工具门禁 / 上下文锁 / 输出契约的 Pi 插件实现（核心载体）
-3. **DaemonServer**：watchdog 机制，TCP socket 通信，事件驱动（GO 项目框架层）
-4. **GO 项目框架骨架**：工程底座（SQLite/HTMX）+ 与 Pi 插件协同
+2. **loop-engine 扩展完善**：`.pi/extensions/`——工具门禁 / 上下文锁 / 输出契约的 Pi 插件实现（核心载体）
+3. **DaemonServer**：watchdog 机制，TCP socket 通信，事件驱动（可选，在 Go 模板层或独立进程）
+4. **应用模板骨架完善**：`framework/` 的 Go/HTMX/SQLite 骨架，被平台监管
 
 ### 落地边界（不可混淆）
 - **编排层（主线）**：纯函数，无副作用，只读 spec 和摘要状态
@@ -227,14 +214,15 @@ Spec（单一真相源）
 
 | 决策点 | 结论 |
 |--------|------|
-| 技术语言 | **Go** |
-| 前端 | HTMX + daisyUI + templ（SSR，零 npm）|
-| 存储 | SQLite / BadgerDB |
+| 平台语言 | **TypeScript**（Pi 插件） |
+| 模板语言 | **Go**（可选应用骨架） |
+| 前端（模板） | HTMX + daisyUI + templ（SSR，零 npm）|
+| 存储（模板） | SQLite / BadgerDB |
 | 通信协议 | STATUS.md / Spec 文件（文本即协议）|
 | 编排方式 | 事件驱动，不轮询 |
 | Loop 结构 | 对证循环（写审分家）+ 工作间并发 |
 | 约束实现 | 门禁 / 契约 / 锁，代码强制非提示 |
 | 数据源真相 | spec（YAML/表格即源码）|
-| **Harness 载体** | **Pi 插件（TS）**——`loop-engine` 扩展，非从零写框架 |
-| **"Go vs TS"** | **分层不冲突**：harness 引擎=Pi 插件(TS)，GO 框架=旁侧工程骨架 |
+| **平台载体** | **Pi 插件（TS）**——`.pi/` 目录，非从零写框架 |
+| **"TS vs Go"** | **平台 = TS（.pi/），模板 = Go（framework/），两者无关** |
 | 架构哲学 | 反魔法：显式、无第二层含义 |
