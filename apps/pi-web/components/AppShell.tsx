@@ -521,33 +521,30 @@ export function AppShell() {
     setLastOpenSession(projectKey, selectedSession.id);
   }, [selectedSession]);
 
-  useEffect(() => {
-    const requestedCwd = initialNavigation.requestedCwd;
-    if (!requestedCwd) return;
+  const [targetProject, setTargetProject] = useState<{ root: string; name: string; piDir: string | null } | null>(null);
 
+  // Single-project lock: the platform serves exactly the configured target.
+  // The locked cwd comes from /api/pi/target, never from URL/cwd or a picker.
+  useEffect(() => {
     const controller = new AbortController();
     setInitialCwdStatus("validating");
     setInitialCwdError(null);
 
-    void fetch("/api/cwd/validate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cwd: requestedCwd }),
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        const data = await response.json().catch(() => ({})) as { cwd?: string; error?: string };
-        if (!response.ok || !data.cwd) {
-          throw new Error(data.error ?? `HTTP ${response.status}`);
+    void fetch("/api/pi/target", { signal: controller.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((data: { target: { root: string; name: string; piDir: string | null }; error?: string }) => {
+        if (controller.signal.aborted) return;
+        if (data.error || !data.target?.root) throw new Error(data.error ?? "missing target root");
+        setTargetProject(data.target);
+        if (!data.target.piDir) {
+          setInitialCwdError(`no .pi dir at ${data.target.root}`);
         }
-
-        // The sidebar will notify us when it adopts this cwd. Avoid remounting
-        // the just-created empty chat during that initial synchronization.
+        // The sidebar adopts this cwd via the project-locked prop.
         suppressCwdBumpRef.current = true;
-        const draftId = `initial:${requestedCwd}`;
+        const draftId = `initial:${data.target.root}`;
         setNewSessionDraftId(draftId);
-        activeNewSessionDraftKeyRef.current = `new:${draftId}:${data.cwd}`;
-        setNewSessionCwd(data.cwd);
+        activeNewSessionDraftKeyRef.current = `new:${draftId}:${data.target.root}`;
+        setNewSessionCwd(data.target.root);
         setInitialCwdStatus("ready");
       })
       .catch((error: unknown) => {
@@ -557,7 +554,7 @@ export function AppShell() {
       });
 
     return () => controller.abort();
-  }, [initialNavigation]);
+  }, []);
 
   // Restore the workspace's last open session after switching to it. Called
   // from handleCwdChange once the outgoing context has been reset. The session
@@ -1117,7 +1114,8 @@ export function AppShell() {
         onSelectSession={handleSelectSession}
         onNewSession={handleNewSession}
         initialSessionId={initialSessionId}
-        skipInitialProjectSelection={initialNavigation.requestedCwd !== null}
+        lockedProject={targetProject}
+        skipInitialProjectSelection={targetProject !== null}
         onInitialRestoreDone={handleInitialRestoreDone}
         refreshKey={refreshKey}
         onSessionDeleted={handleSessionDeleted}
