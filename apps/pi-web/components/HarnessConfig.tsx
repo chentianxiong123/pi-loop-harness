@@ -24,9 +24,27 @@ import {
 import { MarkdownBody } from "./MarkdownBody";
 import type { PiAgentMeta, PiArtifactKind, PiExtensionMeta, PiRunMeta, PiRunLedger, PiSkillMeta } from "@/lib/pi-platform-types";
 
-type HarnessView = "overview" | "extensions" | "pipeline";
+type HarnessView = "overview" | "extensions" | "pipeline" | "roles";
 
 const STAGE_STEPS = ["plan", "explore", "spec", "tasks", "implement", "retest", "merge", "smoke"];
+
+const ROLE_SPECS = [
+  { name: "planner", label: "规划", stage: "plan", status: "new", writesCode: false, output: "任务书 .pi/plan/<name>.md", desc: "把原始需求煮成可执行任务书：scope 切片 + 验收标准" },
+  { name: "investigator", label: "侦察", stage: "explore", status: "existing", writesCode: false, output: "上下文简报 JSON", desc: "只读代码库，产出 findings/hints/risks 压缩简报供实现者直接用" },
+  { name: "implementer", label: "实现", stage: "implement", status: "existing", writesCode: true, output: "提交 + 卡片（worktree）", desc: "在隔离 worktree 写代码，回归自检，永不合并" },
+  { name: "reviewer", label: "复测", stage: "retest", status: "existing", writesCode: false, output: "VERDICT PASS/FAIL JSON", desc: "对原始需求逐条审 diff，无来源改动直接拒" },
+  { name: "merger", label: "合流", stage: "merge", status: "new", writesCode: true, output: "main 合并 + smoke", desc: "PASS 才合回主线，合后跑 smoke，唯一能写 main 的角色" },
+  { name: "finish", label: "结账", stage: "done", status: "future", writesCode: false, output: "教训知识入库", desc: "结账本 → 教训写入项目知识库（memorynote，后续工位）" },
+] as const;
+
+const ROLE_TOOLS: Record<string, string[]> = {
+  planner: ["read", "write", "grep", "find", "ls", "bash"],
+  investigator: ["read", "grep", "find", "ls", "bash"],
+  implementer: ["read", "write", "edit", "bash", "grep", "find", "ls"],
+  reviewer: ["read", "grep", "find", "ls", "bash"],
+  merger: ["read", "bash", "grep", "find", "ls"],
+  finish: [],
+};
 
 const STAGE_COLOR: Record<string, string> = {
   plan: "#6b7280", explore: "#6b7280", spec: "#6b7280", tasks: "#6b7280",
@@ -417,6 +435,7 @@ export function HarnessConfig({ cwd, onClose, embedded = false }: { cwd: string;
         <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", marginRight: 4 }}>平台</span>
         {([
           ["pipeline", "流水线"],
+          ["roles", "角色"],
           ["overview", "平台总览"],
           ["extensions", "扩展工具"],
         ] as const).map(([key, label]) => (
@@ -441,10 +460,113 @@ export function HarnessConfig({ cwd, onClose, embedded = false }: { cwd: string;
       </div>
       <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
         {view === "pipeline" && <PipelineView cwd={cwd} />}
+        {view === "roles" && <RolesView cwd={cwd} />}
         {view === "overview" && <OverviewView cwd={cwd} />}
         {view === "extensions" && <ExtensionsView cwd={cwd} />}
       </div>
     </div>
+  );
+}
+
+const ROLE_STATUS: Record<string, { label: string; color: string }> = {
+  new: { label: "新", color: "#f59e0b" },
+  existing: { label: "现有", color: "#16a34a" },
+  future: { label: "后续", color: "#6b7280" },
+};
+
+function RolesView({ cwd }: { cwd: string }) {
+  const [data, setData] = useState<HarnessData | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadData(cwd).then((next) => {
+      if (!cancelled) setData(next);
+    });
+    return () => { cancelled = true; };
+  }, [cwd]);
+
+  if (!data) return <div className="config-empty-state">加载中…</div>;
+
+  return (
+    <ConfigPanelShell embedded title="角色" subtitle={shortenPath(data.piDir)} onClose={() => {}}>
+      <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <ConfigStatusDot active color="#16a34a" />
+          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)" }}>主 Agent（调度）</span>
+          <span style={{ fontSize: 11, color: "var(--text-dim)" }}>只持节奏 · 只读结果卡 · 只派任务</span>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "stretch",
+            gap: 8,
+            flexWrap: "wrap",
+            padding: "10px 0 4px",
+          }}
+        >
+          {ROLE_SPECS.map((role, i) => {
+            const agent = data.agents.find((a) => a.name === role.name);
+            const status = ROLE_STATUS[role.status];
+            return (
+              <div key={role.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div
+                  style={{
+                    flex: "0 1 220px",
+                    border: "1px solid var(--border)",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    background: "var(--bg-panel)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    minWidth: 200,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 10, color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>{i + 1}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-mono)" }}>{role.name}</span>
+                    <span
+                      style={{
+                        fontSize: 9, padding: "1px 6px", borderRadius: 999,
+                        background: `color-mix(in srgb, ${status.color} 13%, transparent)`, color: status.color, fontWeight: 600, marginLeft: "auto",
+                      }}
+                    >
+                      {status.label}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text)" }}>{role.label}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.45 }}>{agent?.description ?? role.desc}</div>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {ROLE_TOOLS[role.name].map((t) => <Tag key={t} color="#6b7280">{t}</Tag>)}
+                  </div>
+                  <div style={{ fontSize: 10, color: "var(--text-dim)", lineHeight: 1.4 }}>
+                    产出 <span style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>{role.output}</span>
+                  </div>
+                  <div style={{ fontSize: 10, display: "flex", gap: 4, alignItems: "center" }}>
+                    {role.writesCode ? (
+                      <>
+                        <ConfigStatusDot active color="#f59e0b" />
+                        <span style={{ color: "var(--text-muted)" }}>
+                          {role.name === "merger" ? "仅在 PASS 后写 main" : "只写 worktree"}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <ConfigStatusDot active color="#16a34a" />
+                        <span style={{ color: "var(--text-muted)" }}>只读</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {i < ROLE_SPECS.length - 1 && (
+                  <div style={{ color: "var(--text-dim)", fontSize: 14, flexShrink: 0 }}>→</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </ConfigPanelShell>
   );
 }
 
