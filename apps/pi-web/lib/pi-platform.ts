@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync, type Dirent } from "fs";
 import { join, dirname, relative } from "path";
 import { parseFrontmatter } from "@earendil-works/pi-coding-agent";
 import type { PiArtifactKind, PiArtifactMeta, PiAgentMeta, PiExtensionMeta, PiRunMeta, PiRunLedger, PiSkillMeta } from "@/lib/pi-platform-types";
+import { sanitizeRunName } from "@/lib/run-name";
 
 const CONFIG_DIR_NAME = ".pi";
 
@@ -265,9 +266,8 @@ function summarizeRun(ledger: PiRunLedger): string {
 
 /** Read a single run ledger by name */
 export function readRun(piDir: string, name: string): PiRunLedger | null {
-  const safe = name.replace(/[^\w.-]/g, "");
-  if (safe !== name) return null;
-  const filePath = join(piDir, "runs", `${name}.json`);
+  const safe = sanitizeRunName(name);
+  const filePath = join(piDir, "runs", `${safe}.json`);
   try {
     return JSON.parse(readFileSync(filePath, "utf8")) as PiRunLedger;
   } catch {
@@ -288,6 +288,28 @@ export function listArtifacts(piDir: string, kind: PiArtifactKind): PiArtifactMe
       title: String(frontmatter.title ?? base),
     };
   });
+}
+
+/** Read worker action events (JSON lines) from runs/<name>/actions.jsonl. */
+export function readActionLines(piDir: string, name: string): { events: unknown[]; count: number } {
+  const safe = sanitizeRunName(name);
+  const filePath = join(piDir, "runs", `${safe}.actions.jsonl`);
+  try {
+    const text = readFileSync(filePath, "utf8");
+    const events: unknown[] = [];
+    for (const line of text.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      try {
+        events.push(JSON.parse(trimmed));
+      } catch {
+        /* skip malformed line */
+      }
+    }
+    return { events, count: events.length };
+  } catch {
+    return { events: [], count: 0 };
+  }
 }
 
 export const ARTIFACT_KINDS: PiArtifactKind[] = ["plan", "spec", "tasks", "smoke", "feasibility"];

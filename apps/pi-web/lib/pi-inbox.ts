@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
-import { mkdirSync } from "fs";
+import { appendFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
+import { sanitizeRunName } from "./run-name";
 
 export interface InboxItem {
   id: string;
@@ -114,4 +115,12 @@ export function getItem(piDir: string, id: string): InboxItem | undefined {
   } finally {
     db.close();
   }
+}
+
+/** Append one raw JSON event line to runs/<name>.actions.jsonl (worker stream). */
+export function appendAction(piDir: string, name: string, line: string): void {
+  const safe = sanitizeRunName(name);
+  const filePath = join(piDir, "runs", `${safe}.actions.jsonl`);
+  mkdirSync(dirname(filePath), { recursive: true });
+  appendFileSync(filePath, line.endsWith("\n") ? line : line + "\n");
 }
