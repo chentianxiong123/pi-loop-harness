@@ -103,6 +103,9 @@ interface Props {
   onNewSession?: (sessionId: string, cwd: string) => void;
   initialSessionId?: string | null;
   skipInitialProjectSelection?: boolean;
+  /** Single-project lock: when set, this is the only project the UI can use.
+   *  The cwd picker, worktree switcher and custom path all become inert. */
+  lockedProject?: { root: string; name: string; piDir: string | null } | null;
   onInitialRestoreDone?: () => void;
   refreshKey?: number;
   onSessionDeleted?: (sessionId: string) => void;
@@ -369,7 +372,7 @@ function PiWebTitle() {
   );
 }
 
-export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSession, initialSessionId, skipInitialProjectSelection, onInitialRestoreDone, refreshKey, onSessionDeleted, selectedCwd: selectedCwdProp, onCwdChange, onOpenFile, onOpenTerminal, explorerRefreshKey, onExplorerRefresh, onAtMention, onAtMentions, onBackgroundTaskDone, onRunningSessionIdsChange, onSessionsChange }: Props) {
+export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSession, initialSessionId, skipInitialProjectSelection, lockedProject, onInitialRestoreDone, refreshKey, onSessionDeleted, selectedCwd: selectedCwdProp, onCwdChange, onOpenFile, onOpenTerminal, explorerRefreshKey, onExplorerRefresh, onAtMention, onAtMentions, onBackgroundTaskDone, onRunningSessionIdsChange, onSessionsChange }: Props) {
   const { t } = useI18n();
   const [allSessions, setAllSessions] = useState<SessionInfo[]>([]);
   const [sessionListVersion, setSessionListVersion] = useState<number | null>(null);
@@ -658,6 +661,11 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
   /** Resolve both display root and stable identity from server-provided data. */
   const projectFor = useCallback((cwd: string | null): ProjectSelection | null => {
     if (!cwd) return null;
+    // Single-project lock: the identity is the locked project, no git or
+    // session-derived resolution needed.
+    if (lockedProject) {
+      return projectSelection(lockedProject.root, lockedProject.root);
+    }
     // /api/cwd/validate resolves identity before a custom path becomes active,
     // preventing one render with a raw path key from looking like a switch.
     if (validatedProject?.cwd === cwd) {
@@ -677,7 +685,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
     return match
       ? projectSelection(match.projectRoot ?? match.cwd, workspaceKeyOf(match))
       : projectSelection(cwd, cwd);
-  }, [validatedProject, worktreeState, allSessions, projectSelection]);
+  }, [lockedProject, validatedProject, worktreeState, allSessions, projectSelection]);
 
   // A worktree/session refresh can hydrate the stable key without changing
   // cwd, so notify when either changes. The parent treats same-cwd key changes
@@ -747,6 +755,9 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
 
   // Auto-select cwd and restore session from URL on first load
   useEffect(() => {
+    // Single-project lock: no auto-selection from recent projects, but the
+    // explicit URL session restore must still run. The locked cwd wins as the
+    // fallback only when there is nothing to restore.
     if (allSessions.length === 0 || skipInitialProjectSelection) return;
 
     if (selectedCwd === null) {
@@ -762,10 +773,21 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
         // Session not found — notify parent so it can show the placeholder
         onInitialRestoreDone?.();
       }
+      if (lockedProject) {
+        setSelectedCwd(lockedProject.root);
+        return;
+      }
       const projects = getRecentProjects(allSessions);
       if (projects.length > 0) setSelectedCwd(projects[0].root);
     }
-  }, [allSessions, selectedCwd, initialSessionId, skipInitialProjectSelection, onSelectSession, onInitialRestoreDone]);
+  }, [allSessions, selectedCwd, initialSessionId, skipInitialProjectSelection, lockedProject, onSelectSession, onInitialRestoreDone]);
+
+  // Pin the cwd to the locked project. This overrides every other path: URL
+  // restore, session pick, worktree switch — there is exactly one project.
+  useEffect(() => {
+    if (!lockedProject) return;
+    setSelectedCwd(lockedProject.root);
+  }, [lockedProject]);
 
   // Prefer an exact UI selection while a refetch is in flight. Once the
   // response catches up, the server-resolved path handles Windows case and
@@ -965,22 +987,23 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
   // a dot on the (collapsed) selector button so it is visible without opening
   // the dropdown.
   const hasOtherWorkspaceActivity = useMemo(
-    () => [...projectActivity.entries()].some(
+    () => !lockedProject && [...projectActivity.entries()].some(
       ([key, { running, unread }]) => key !== selectedProject?.key && (running > 0 || unread > 0),
     ),
-    [projectActivity, selectedProject],
+    [lockedProject, projectActivity, selectedProject],
   );
 
   const filteredSessions = selectedProject
     ? sessionsForProject(allSessions, selectedProject.key)
     : allSessions;
-  const showWorktreeSwitcher = Boolean(
+  // Single-project lock hides the worktree switcher entirely.
+  const showWorktreeSwitcher = !lockedProject && Boolean(
     worktreeState?.isGit
     && worktreeState.isTopLevel
     && selectedCwd
     && selectedProject?.key === worktreeState.projectKey
   );
-  const worktreeGuide = selectedCwd
+  const worktreeGuide = !lockedProject && selectedCwd
     && worktreeState
     && selectedProject?.key === worktreeState.projectKey
     && !showWorktreeSwitcher
@@ -1097,7 +1120,10 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
         {/* CWD picker */}
         <div ref={dropdownRef} style={{ position: "relative" }}>
           <button
-            onClick={() => setDropdownOpen((v) => !v)}
+            onClick={() => {
+              if (lockedProject) return;
+              setDropdownOpen((v) => !v);
+            }}
             title={selectedProject?.root ?? selectedCwd ?? ""}
             style={{
               width: "100%",
