@@ -8,3 +8,8 @@ framework/data/
 .pi/runs/
 *.agent-state.json
 outbox/
+
+# node_modules & lockfiles
+node_modules/
+*.lock
+

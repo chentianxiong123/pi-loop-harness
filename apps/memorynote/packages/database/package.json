@@ -1,0 +1,28 @@
+{
+  "name": "@core/database",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@prisma/client": "^5.4.1",
+    "prisma": "5.4.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.5",
+    "rimraf": "6.0.1"
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "generate": "prisma generate",
+    "db:migrate:create": "prisma migrate dev --preview-feature",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run generate && npm run clean && tsc --noEmit false --outDir dist --declaration",
+    "dev": "tsc --noEmit false --outDir dist --declaration --watch"
+  }
+}
