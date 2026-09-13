@@ -1,0 +1,23 @@
+{
+  "name": "pi-loop-harness",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Agent control platform \u2014 .pi/ \u7f16\u6392 + framework/ Go \u76ee\u6807 + apps/ \u76d1\u7ba1 UI",
+  "scripts": {
+    "dev": "npm run dev:memorynote",
+    "dev:piweb": "npm --prefix apps/pi-web run dev",
+    "dev:memorynote": "npm --prefix apps/memorynote run dev",
+    "dev:webclone": "npm --prefix apps/webclone/apps/cli run dev",
+    "build": "npm run build:piweb && npm run build:memorynote && npm run build:webclone",
+    "build:piweb": "npm --prefix apps/pi-web run build",
+    "build:memorynote": "npm --prefix apps/memorynote run build",
+    "build:webclone": "npm --prefix apps/webclone run build",
+    "install:piweb": "npm install --prefix apps/pi-web",
+    "install:memorynote": "npm install --prefix apps/memorynote",
+    "install:webclone": "npm install --prefix apps/webclone",
+    "setup": "npm run install:piweb && npm run install:memorynote && npm run install:webclone"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}
