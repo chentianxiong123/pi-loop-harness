@@ -1,0 +1,9 @@
+node_modules
+.turbo
+.trae
+.env
+*.log
+dist
+.DS_Store
+*.exe
+.claude/

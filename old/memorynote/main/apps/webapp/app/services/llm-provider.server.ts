@@ -1,0 +1,534 @@
+import { prisma } from "~/db.server";
+import { env } from "~/env.server";
+import { getLLMConfig } from "~/services/llm-config.server";
+import { logger } from "~/services/logger.service";
+import seedData from "~/config/llm-models.json";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface SeedModel {
+  modelId: string;
+  label: string;
+  complexity: string;
+  supportsBatch?: boolean;
+  isDeprecated?: boolean;
+  capabilities: string[];
+  dimensions?: number;
+}
+
+interface SeedProvider {
+  name: string;
+  envKey: string;
+  models: SeedModel[];
+}
+
+export interface EmbeddingInfo {
+  modelId: string;
+  providerId: string;
+  providerType: string;
+  dimensions: number;
+}
+
+interface ProviderConfig {
+  baseUrl?: string;
+  apiMode?: string;
+}
+
+export type UseCase = "chat" | "memory" | "search";
+export type ModelComplexity = "low" | "medium" | "high";
+
+type WorkspaceMetadata = {
+  modelConfig?: Record<string, { modelId: string } | undefined>;
+  embeddingConfig?: {
+    modelId?: string;
+    dimensions?: number | null;
+  };
+  rerankConfig?: {
+    provider?: string;
+    modelId?: string;
+    threshold?: number | null;
+  };
+};
+
+async function getWorkspaceMetadata(
+  _workspaceId: string,
+): Promise<WorkspaceMetadata> {
+  // Personal use only — no workspace table
+  return {} as WorkspaceMetadata;
+}
+
+function splitProviderModel(modelId: string): {
+  providerType: string;
+  bareModelId: string;
+} {
+  if (modelId.includes("/")) {
+    const [providerType, ...rest] = modelId.split("/");
+    return {
+      providerType,
+      bareModelId: rest.join("/"),
+    };
+  }
+
+  return {
+    providerType: inferProviderFromModelId(modelId),
+    bareModelId: modelId,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Seeder
+// ---------------------------------------------------------------------------
+
+function buildProviderConfig(providerType: string): Record<string, unknown> {
+  switch (providerType) {
+    case "openai":
+      return {
+        ...(env.OPENAI_BASE_URL && { baseUrl: env.OPENAI_BASE_URL }),
+        ...(env.OPENAI_API_MODE && {
+          apiMode:
+            env.OPENAI_API_MODE === "chat"
+              ? "chat_completions"
+              : env.OPENAI_API_MODE,
+        }),
+      };
+    case "ollama":
+      return {
+        ...(env.OLLAMA_URL && { baseUrl: env.OLLAMA_URL }),
+      };
+    case "azure":
+      return {
+        ...(env.AZURE_BASE_URL && { baseUrl: env.AZURE_BASE_URL }),
+      };
+    default:
+      return {};
+  }
+}
+
+/**
+ * Idempotent seeder — ensures all providers and models from llm-models.json
+ * exist in the DB. Safe to call on every startup / workspace creation.
+ */
+export async function ensureDefaultProviders(): Promise<void> {
+  const catalog = seedData as Record<string, SeedProvider>;
+
+  for (const [providerType, providerData] of Object.entries(catalog)) {
+    let provider = await prisma.lLMProvider.findFirst({
+      where: { type: providerType },
+    });
+    const config = buildProviderConfig(providerType) as any;
+
+    if (!provider) {
+      provider = await prisma.lLMProvider.create({
+        data: {
+          name: providerData.name,
+          type: providerType,
+          isActive: true,
+          config,
+        },
+      });
+      logger.info(`[LLM] Created provider: ${providerData.name}`);
+    } else if (Object.keys(config).length > 0) {
+      await prisma.lLMProvider.update({
+        where: { id: provider.id },
+        data: { config },
+      });
+    }
+
+    const existingModels = await prisma.lLMModel.findMany({
+      where: { providerId: provider.id },
+    });
+    const existingModelIds = new Set(existingModels.map((m) => m.modelId));
+    const seedModelIds = new Set(providerData.models.map((m) => m.modelId));
+
+    for (const seedModel of providerData.models) {
+      if (!existingModelIds.has(seedModel.modelId)) {
+        await prisma.lLMModel.create({
+          data: {
+            providerId: provider.id,
+            modelId: seedModel.modelId,
+            label: seedModel.label,
+            complexity: seedModel.complexity,
+            supportsBatch: seedModel.supportsBatch ?? true,
+            isDeprecated: seedModel.isDeprecated ?? false,
+            capabilities: seedModel.capabilities,
+            dimensions: seedModel.dimensions ?? null,
+          },
+        });
+        logger.info(
+          `[LLM] Added model: ${seedModel.label} (${seedModel.modelId})`,
+        );
+      } else {
+        const existing = existingModels.find(
+          (m) => m.modelId === seedModel.modelId,
+        )!;
+        await prisma.lLMModel.update({
+          where: { id: existing.id },
+          data: {
+            label: seedModel.label,
+            capabilities: seedModel.capabilities,
+            dimensions: seedModel.dimensions ?? null,
+          },
+        });
+      }
+    }
+
+    for (const existing of existingModels) {
+      if (!seedModelIds.has(existing.modelId) && !existing.isDeprecated) {
+        await prisma.lLMModel.update({
+          where: { id: existing.id },
+          data: { isDeprecated: true },
+        });
+        logger.info(`[LLM] Deprecated model: ${existing.modelId}`);
+      }
+    }
+  }
+
+  // Dynamic model creation for env-specified models not in seed
+
+  if (env.MODEL) {
+    const chatModelExists = await prisma.lLMModel.findFirst({
+      where: { modelId: env.MODEL },
+    });
+    if (!chatModelExists) {
+      const targetProvider = await prisma.lLMProvider.findFirst({
+        where: { type: env.CHAT_PROVIDER },
+      });
+      if (targetProvider) {
+        await prisma.lLMModel.create({
+          data: {
+            providerId: targetProvider.id,
+            modelId: env.MODEL,
+            label: env.MODEL,
+            complexity: "medium",
+            supportsBatch: false,
+            capabilities: ["chat"],
+          },
+        });
+        logger.info(
+          `[LLM] Added custom chat model: ${env.MODEL} under ${env.CHAT_PROVIDER}`,
+        );
+      }
+    }
+  }
+
+  const embeddingProvider = env.EMBEDDINGS_PROVIDER ?? "openai";
+  const embeddingModelId = env.EMBEDDING_MODEL || "text-embedding-3-small";
+  const embeddingModelExists = await prisma.lLMModel.findFirst({
+    where: { modelId: embeddingModelId, capabilities: { has: "embedding" } },
+  });
+  if (!embeddingModelExists) {
+    const targetProvider = await prisma.lLMProvider.findFirst({
+      where: { type: embeddingProvider },
+    });
+    if (targetProvider) {
+      const dims = parseInt(env.EMBEDDING_MODEL_SIZE || "1024", 10);
+      await prisma.lLMModel.create({
+        data: {
+          providerId: targetProvider.id,
+          modelId: embeddingModelId,
+          label: embeddingModelId,
+          complexity: "medium",
+          supportsBatch: false,
+          capabilities: ["embedding"],
+          dimensions: dims,
+        },
+      });
+      logger.info(
+        `[LLM] Added custom embedding model: ${embeddingModelId} under ${embeddingProvider}`,
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Accessors — direct from env (no cache)
+// ---------------------------------------------------------------------------
+
+export function getDefaultChatProviderType(): string {
+  return env.CHAT_PROVIDER;
+}
+
+export function getDefaultChatModelId(): string {
+  return getLLMConfig().chatModel;
+}
+
+export function getProviderConfig(providerType: string): ProviderConfig {
+  if (providerType === "openai") {
+    const cfg = getLLMConfig();
+    const apiMode = cfg.openaiApiMode;
+    return {
+      baseUrl: cfg.openaiBaseUrl ?? undefined,
+      apiMode:
+        apiMode === "chat"
+          ? "chat_completions"
+          : (apiMode as ProviderConfig["apiMode"]),
+    };
+  }
+  if (providerType === "ollama") {
+    return { baseUrl: env.OLLAMA_URL };
+  }
+  if (providerType === "azure") {
+    return { baseUrl: env.AZURE_BASE_URL };
+  }
+  return {};
+}
+
+export async function getDefaultEmbeddingInfo(
+  _workspaceId?: string | null,
+): Promise<EmbeddingInfo | null> {
+  // Personal use: skip workspace-specific config
+  const embeddingModelId = getLLMConfig().embeddingModel || "text-embedding-3-small";
+  const model = await prisma.lLMModel.findFirst({
+    where: { modelId: embeddingModelId, capabilities: { has: "embedding" } },
+    include: { provider: true },
+  });
+  if (!model) return null;
+  return {
+    modelId: model.modelId,
+    providerId: model.providerId,
+    providerType: model.provider.type,
+    dimensions: model.dimensions ?? parseInt(getLLMConfig().embeddingModelSize || "1024", 10),
+  };
+}
+
+export async function getEmbeddingDimensions(
+  _workspaceId?: string | null,
+): Promise<number> {
+  const info = await getDefaultEmbeddingInfo();
+  return info?.dimensions ?? parseInt(getLLMConfig().embeddingModelSize || "1024", 10);
+}
+
+// ---------------------------------------------------------------------------
+// Use-case model resolution
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve the model ID for a given use case + complexity.
+ *
+ * Resolution order:
+ *   1. workspace.metadata.modelConfig[useCase].modelId  (explicit workspace override)
+ *   2. LLMModel with env.CHAT_PROVIDER + complexity     (DB complexity routing)
+ *   3. env.MODEL                                        (final fallback)
+ */
+export async function getModelForUseCase(
+  useCase: UseCase,
+  _workspaceId?: string | null,
+  complexity: ModelComplexity = "medium",
+): Promise<string> {
+  // Personal use: skip workspace override
+  void _workspaceId;
+
+  // 2. DB complexity routing via env.CHAT_PROVIDER
+  const provider = await prisma.lLMProvider.findFirst({
+    where: { type: env.CHAT_PROVIDER },
+  });
+  if (provider) {
+    const model = await prisma.lLMModel.findFirst({
+      where: {
+        providerId: provider.id,
+        complexity,
+        capabilities: { has: "chat" },
+        isEnabled: true,
+        isDeprecated: false,
+      },
+    });
+    if (model) return model.modelId;
+  }
+
+  // 3. runtime config fallback
+  return getLLMConfig().chatModel;
+}
+
+// ---------------------------------------------------------------------------
+// Provider / model queries
+// ---------------------------------------------------------------------------
+
+const ENV_KEY_MAP: Record<string, string | undefined> = {
+  anthropic: env.ANTHROPIC_API_KEY,
+  google: env.GOOGLE_GENERATIVE_AI_API_KEY,
+  openrouter: env.OPENROUTER_API_KEY,
+  deepseek: env.DEEPSEEK_API_KEY,
+  vercel: env.AI_GATEWAY_API_KEY,
+  groq: env.GROQ_API_KEY,
+  mistral: env.MISTRAL_API_KEY,
+  xai: env.XAI_API_KEY,
+  ollama: env.OLLAMA_URL,
+  azure: env.AZURE_API_KEY,
+};
+
+function resolveOpenAIKey(): string | undefined {
+  return getLLMConfig().openaiApiKey ?? undefined;
+}
+
+export async function getProviders(_workspaceId?: string) {
+  return prisma.lLMProvider.findMany({
+    where: { isActive: true },
+    include: { models: true },
+  }).then((providers) => providers.filter((p) => !!ENV_KEY_MAP[p.type]));
+}
+
+/**
+ * Returns enabled, non-deprecated chat models from active providers.
+ * Used by the settings UI to populate model selectors.
+ */
+export async function getChatModels(_workspaceId?: string) {
+  const providers = await getProviders();
+  return prisma.lLMModel.findMany({
+    where: {
+      providerId: { in: providers.map((p) => p.id) },
+      capabilities: { has: "chat" },
+      isEnabled: true,
+      isDeprecated: false,
+    },
+    include: { provider: true },
+    orderBy: [{ provider: { type: "asc" } }, { label: "asc" }],
+  });
+}
+
+export async function getAvailableModels(_workspaceId?: string) {
+  const providers = await getProviders();
+  const providerIds = providers.map((p) => p.id);
+  return prisma.lLMModel.findMany({
+    where: {
+      providerId: { in: providerIds },
+      isEnabled: true,
+      isDeprecated: false,
+    },
+    include: { provider: true },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// API key resolution
+// ---------------------------------------------------------------------------
+
+export function resolveApiKey(providerType: string): string | undefined {
+  if (providerType === "openai") return resolveOpenAIKey();
+  return ENV_KEY_MAP[providerType];
+}
+
+import {
+  resolveWorkspaceApiKey,
+  resolveWorkspaceProviderBaseUrl,
+  resolveWorkspaceProviderApiMode,
+} from "~/services/byok.server";
+
+export interface ResolvedKey {
+  apiKey: string | undefined;
+  isBYOK: boolean;
+}
+
+export async function resolveApiKeyForWorkspace(
+  _workspaceId: string | null | undefined,
+  providerType: string,
+): Promise<ResolvedKey> {
+  // Personal use: skip BYOK workspace lookup
+  const fallbackKey =
+    providerType === "openai" ? resolveOpenAIKey() : ENV_KEY_MAP[providerType];
+  return { apiKey: fallbackKey, isBYOK: false };
+}
+
+/**
+ * Infer provider type from model ID.
+ * Duplicated from model.server.ts to avoid circular imports.
+ */
+function inferProviderFromModelId(modelId: string): string {
+  if (
+    modelId.startsWith("gpt-") ||
+    modelId.startsWith("o3") ||
+    modelId.startsWith("o4")
+  )
+    return "openai";
+  if (modelId.startsWith("claude-")) return "anthropic";
+  if (modelId.startsWith("gemini-")) return "google";
+  if (modelId.startsWith("us.amazon") || modelId.startsWith("us.meta"))
+    return "bedrock";
+  if (modelId.startsWith("openrouter/")) return "openrouter";
+  if (modelId.startsWith("deepseek-")) return "deepseek";
+  if (
+    modelId.startsWith("mistral-") ||
+    modelId.startsWith("open-mistral-") ||
+    modelId.startsWith("open-mixtral-")
+  )
+    return "mistral";
+  if (modelId.startsWith("grok-")) return "xai";
+  if (modelId.startsWith("groq/")) return "groq";
+  if (modelId.startsWith("vercel/")) return "vercel";
+  if (modelId.startsWith("azure/")) return "azure";
+  return env.CHAT_PROVIDER;
+}
+
+/**
+ * Resolve model + API key for a workspace, use case and complexity.
+ * Model: workspace.metadata.modelConfig[useCase] → DB complexity → env.MODEL
+ * Key:   workspace BYOK → env key
+ */
+export async function resolveModelForWorkspace(
+  _workspaceId: string | null | undefined,
+  useCase: UseCase = "chat",
+  complexity: ModelComplexity = "medium",
+): Promise<{
+  modelId: string;
+  apiKey: string | undefined;
+  isBYOK: boolean;
+  baseUrl?: string;
+  apiMode?: string;
+}> {
+  const modelId = await getModelForUseCase(useCase, undefined, complexity);
+  const providerType = inferProviderFromModelId(modelId);
+  const apiKey =
+    providerType === "openai" ? resolveOpenAIKey() : ENV_KEY_MAP[providerType];
+
+  if (providerType === "azure") {
+    return { modelId, apiKey, isBYOK: false, baseUrl: env.AZURE_BASE_URL };
+  }
+
+  if (providerType === "openai") {
+    return {
+      modelId,
+      apiKey,
+      isBYOK: false,
+      baseUrl: env.OPENAI_BASE_URL,
+      apiMode:
+        env.OPENAI_API_MODE === "chat"
+          ? "chat_completions"
+          : env.OPENAI_API_MODE,
+    };
+  }
+
+  return { modelId, apiKey, isBYOK: false };
+}
+
+export type OpenAICompatibleConfig = {
+  id: `${string}/${string}`;
+  apiKey?: string;
+  url?: string;
+  headers?: Record<string, string>;
+};
+
+export type ModelConfig = string | OpenAICompatibleConfig;
+
+export interface ResolvedModelConfig {
+  modelConfig: ModelConfig;
+  isBYOK: boolean;
+}
+
+export async function resolveModelConfig(
+  modelString: string,
+  _workspaceId?: string | null,
+): Promise<ResolvedModelConfig> {
+  const { toRouterString, getProvider } = await import("~/lib/model.server");
+  void _workspaceId; // personal use, no workspace override
+
+  const providerType = getProvider(modelString);
+  const apiKey =
+    providerType === "openai" ? resolveOpenAIKey() : ENV_KEY_MAP[providerType];
+  const routerString = toRouterString(modelString) as `${string}/${string}`;
+
+  if (apiKey) {
+    return { modelConfig: { id: routerString, apiKey }, isBYOK: false };
+  }
+  return { modelConfig: routerString, isBYOK: false };
+}
