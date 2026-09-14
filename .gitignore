@@ -1,9 +1,6 @@
-node_modules
-.turbo
-.trae
-.env
+node_modules/
+dist/
+.turbo/
 *.log
-dist
+.env
 .DS_Store
-*.exe
-.claude/
