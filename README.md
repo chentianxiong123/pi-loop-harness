@@ -1,95 +1,95 @@
-# pi-loop-harness
+# MemoryNote v2
 
-> **loop harness** — AI Agent 循环编排平台
->
-> 平台核心在 `.pi/`（TypeScript / Pi Node.js）；`framework/` 是 Go 应用项目模板，不是平台本身。
+> 单 Next.js 15 + React 19 应用,直接接 PostgreSQL。
+> v1 (Remix 后端 + Vue 前端) 已在 [v1.0.0 tag](https://github.com/chentianxiong123/MemoryNote/releases/tag/v1.0.0) 归档,代码已删除。
 
----
+## 一句话定位
 
-## 这是什么
+个人长期知识增长的 AI 对话与文档工作台,把日常和 AI 的对话、笔记、文档沉淀为可确认、可追溯的个人百科词条。
 
-pi-loop-harness 是一个 **agent 控制监管平台**。它监管 agent 干活的全过程：任务什么时候开始、做到哪一步、复测过没过、该不该回退、断点续跑到哪。
-
-```
-┌──────────────────────────────────────────────────────────┐
-│                   pi-loop-harness                         │
-│                                                              │
-│  .pi/                              framework/               │
-│  TS 平台核心                        Go 应用模板              │
-│                                                              │
-│  8 步流水线                     hello + msgwall             │
-│  角色硬隔离                      business / infra / glue     │
-│  账本断点续跑                    SQLite / HTMX / Alpine      │
-│  权限门 / 验证门                 单一二进制                 │
-│                                                              │
-│  跑在 Pi (Node.js) 上                可选应用骨架模板         │
-│                                                              │
-│  ← 平台本体                            ← 被监管的目标工程     │
-└──────────────────────────────────────────────────────────┘
-```
-
-## 平台核心：`.pi/`
-
-TypeScript 代码，跑在 Pi agent (Node.js) 上。这是平台的实际运行代码。
+## 架构
 
 ```
-.pi/
-├─ agents/                    角色定义（investigator / implementer / reviewer）
-├─ extensions/                硬约束扩展
-│   ├─ pi-permissions.ts      权限门：只读 / 只写 worktree / 禁破坏性 git
-│   ├─ pi-runstate.ts         账本校验：schema + stage 防跳步 + 审计事件
-│   ├─ subagent/              子进程派发：single / parallel / chain
-│   └─ question.ts            交互确认
-├─ skills/
-│   ├─ entries/               人类触发入口（model 可见）
-│   │   ├─ 0-loop-dispatcher  总入口：8 步编排 + 回退 + 断点续跑
-│   │   └─ bug-triage         bug 入口
-│   └─ steps/                 AI 内部环节（disable-model-invocation）
-│       ├─ 1-plan-alignment   审问 → PLAN（frozen）+ 账本
-│       ├─ 2-explore          探索可行性
-│       ├─ 3-spec-review      审查 → SPEC（frozen）
-│       ├─ task-slice         切片 → tasks + 契约
-│       ├─ 4-implement        实施（隔离 worktree）
-│       ├─ 5-retest           复测（另一 agent）
-│       ├─ 6-merge            合并
-│       └─ 7-smoke            冒烟回归
-├─ plan/  feasibility/  spec/  tasks/  smoke/    制品目录
-└─ runs/                                  账本（gitignore）
+┌────────────────────────────────────────────────────┐
+│                   MemoryNote v2                    │
+├────────────────────────────────────────────────────┤
+│                                                    │
+│  apps/web/        Next.js 15.5 + React 19         │
+│  (port 3000)     ├─ React Server Components (RSC) │
+│                   │   直接调 @core/core,0 个 API  │
+│                   ├─ Route handlers (api/chat)    │
+│                   └─ ai-sdk 6 streamText (流式)   │
+│                                                    │
+│  packages/core/   纯 TS,无框架依赖                 │
+│                   ├─ conversation.ts              │
+│                   ├─ document.ts                  │
+│                   ├─ tag.ts                       │
+│                   ├─ wiki.ts                      │
+│                   ├─ knowledge.ts                 │
+│                   ├─ search.ts                    │
+│                   └─ mergedList.ts                │
+│                                                    │
+│  packages/database/  Prisma 5.4 + 25 model        │
+│  packages/providers/ LLM / Embedding 抽象         │
+│  packages/types/     共享枚举                      │
+│                                                    │
+│  PostgreSQL 16  ┐                                  │
+│  + pgvector      ├─ docker compose 本地            │
+│  (port 5433)    ┘                                  │
+└────────────────────────────────────────────────────┘
 ```
 
-## 应用模板：`framework/`
+## 启动
 
-Go + HTMX + SQLite + Alpine.js 的应用项目骨架。被平台监管，作为目标工程。
+```bash
+# 1. 基础设施
+docker compose -f docker-compose.dev.yaml up -d
 
+# 2. 依赖
+pnpm install
+
+# 3. 数据库迁移
+pnpm db:migrate
+
+# 4. 启动(单命令)
+pnpm dev
 ```
-framework/
-├─ business/    纯业务函数（不碰 HTTP / DB）
-├─ infra/       基础设施（SQLite 读写 / HTML 模板）
-├─ glue/        胶水层（契约接口 / HTTP 路由 / 部署）
-├─ spec/        设计文档
-├─ RULES.md     技术栈唯一权威规则
-└─ Makefile     构建 / 启动 / 测试
-```
 
-当前包含：hello（问候）+ msgwall（留言板，全栈 POST → SQLite → HTMX 局部刷新）。
+打开 http://localhost:3000
 
-## 文档
+`.env` 至少需要:
+- `DATABASE_URL` (默认 `postgresql://docker:docker@localhost:5433/memorynote?schema=memorynote`)
+- `OPENAI_API_KEY` (流式 chat 需要)
 
-- [架构总纲](docs/two-frameworks.md) — 平台（TS）与模板（Go）的关系
-- [蓝图总览](docs/blueprint-overview.md) — 综合全部文档的一张蓝图
-- [软件工程哲学](docs/philosophy.md) — 意图驱动的分形软件工厂（思想底座）
-- [应用模板选型研究](docs/framework-research.md) — 若依 × SpringBoot → Go 映射
-- [framework/README.md](framework/README.md) — Go 应用项目骨架说明
-- [文档地图](docs/docmap-ai-framework.md) — 资产索引
+可选:
+- `OPENAI_BASE_URL` (默认 `https://api.openai.com/v1`,OpenAI-compatible endpoint 可改)
+- `MODEL` (默认 `gpt-4o-mini`)
 
-## 怎么开始
+## 路由
 
-新功能：对 Pi 说 `用 0-loop-dispatcher 开发 <功能>`。
-修 bug：对 Pi 说 `用 bug-triage 修 <症状>`。
+| 路径 | 类型 | 说明 |
+|------|------|------|
+| `/` | RSC | 首页:总数 / 收件箱 / 最近对话 / Top 10 关键词 |
+| `/memory/documents` | RSC | 对话+文档合并列表 + 搜索 + 分页 |
+| `/memory/conversations/[id]` | RSC + 客户端 | 对话详情 + 继续对话 |
+| `/chat/new` | 客户端 | 新对话入口 |
+| `/api/chat` | API | 流式聊天 endpoint(SSE) |
 
-## 分支结构
+## 数据模型
 
-- `main` — 主线：平台 + 文档
-- `project-archive-skills` — 地图归档工具（Python CLI + Skill）
-- `confrontation-loop-workflow` — 多 Agent 对证循环流程
-- `next` — 新路线
+25 个 Prisma model 集中在 [`packages/database/prisma/schema.prisma`](packages/database/prisma/schema.prisma)。
+最近加的 CHECK 约束保证 `Conversation.source` 和 `Document.source` 只接受受控枚举值,详见
+[`prisma/migrations/20260903_clean_source/`](packages/database/prisma/migrations/20260903_clean_source/)。
+
+## v1 → v2 迁移历史
+
+- `v1.0.0` tag: 完整 v1 架构文档 + 已知问题清单
+- 阶段 1: 抽 `@core/core` 包(commit `94bff650`)
+- 阶段 2: Next.js 15 骨架(commit `47251255`)
+- 阶段 3: P0 页面 + 流式 chat(commit `31b58cf1`)
+- 阶段 4: source 枚举清洗 + CHECK 约束 + 删 document_fts
+- 阶段 5: 删 webapp + web-vue
+
+## 来源与协议
+
+本项目基于开源项目 CORE by RedPlanetHQ 改造,保留原项目的协议约束。详见 [LICENSE](LICENSE)。
