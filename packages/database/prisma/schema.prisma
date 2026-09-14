@@ -16,9 +16,6 @@ model Conversation {
   deleted   DateTime?
 
   unread    Boolean @default(false)
-  // Allowed values: upload | deepseek-export | core | simple-chat
-  //                 | persona | skill | import | whatsapp | task | onboarding
-  // See migration 20260903_clean_source for the CHECK constraint.
   source    String  @default("core")
   incognito Boolean @default(false)
 
@@ -28,6 +25,8 @@ model Conversation {
 
   status         String  @default("pending")
   activeStreamId String?
+
+
 
   ConversationHistory ConversationHistory[]
   knowledgeCaptureBatches KnowledgeCaptureBatch[]
@@ -140,9 +139,10 @@ model Document {
   sessionId String?
 
   title       String
+
+
   content     String
   labelIds    String[]
-  // Allowed values: same as Conversation.source.
   source      String
   metadata    Json?
   type        String
@@ -200,6 +200,7 @@ model IngestionQueue {
   priority Int     @default(0)
 
   source    String?
+
   title     String?
   sessionId String?
   type      String?
@@ -250,6 +251,8 @@ model RecallLog {
   deleted   DateTime?
 
   accessType String
+
+
   query      String?
   targetType String?
   targetId   String?
@@ -332,6 +335,8 @@ model Task {
   updatedAt DateTime @updatedAt
 
   title       String
+
+
   description String?
   status      TaskStatus @default(Todo)
 
@@ -405,6 +410,7 @@ model ButlerComment {
   resolvedAt DateTime?
 
   selectedText   String
+
   content        String
   relativeStart  Json?
   relativeEnd    Json?
@@ -439,6 +445,7 @@ enum UserType {
 model LLMProvider {
   id          String     @id @default(uuid())
   name        String
+
   type        String
   config      Json       @default("{}")
   isActive    Boolean    @default(true)
@@ -454,6 +461,7 @@ model LLMModel {
   providerId    String
   provider      LLMProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
   modelId       String
+
   label         String
   complexity    String
   supportsBatch Boolean     @default(true)
@@ -484,6 +492,8 @@ model WikiEntry {
   updatedAt DateTime @updatedAt
 
   entityUuid String
+
+
   title      String
   definition String
   summary    String
