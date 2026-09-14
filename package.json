@@ -1,23 +1,30 @@
 {
-  "name": "pi-loop-harness",
+  "name": "memorynote",
   "private": true,
-  "version": "0.1.0",
-  "description": "Agent control platform \u2014 .pi/ \u7f16\u6392 + framework/ Go \u76ee\u6807 + apps/ \u76d1\u7ba1 UI",
+  "version": "2.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "npm run dev:memorynote",
-    "dev:piweb": "npm --prefix apps/pi-web run dev",
-    "dev:memorynote": "npm --prefix apps/memorynote run dev",
-    "dev:webclone": "npm --prefix apps/webclone/apps/cli run dev",
-    "build": "npm run build:piweb && npm run build:memorynote && npm run build:webclone",
-    "build:piweb": "npm --prefix apps/pi-web run build",
-    "build:memorynote": "npm --prefix apps/memorynote run build",
-    "build:webclone": "npm --prefix apps/webclone run build",
-    "install:piweb": "npm install --prefix apps/pi-web",
-    "install:memorynote": "npm install --prefix apps/memorynote",
-    "install:webclone": "npm install --prefix apps/webclone",
-    "setup": "npm run install:piweb && npm run install:memorynote && npm run install:webclone"
+    "dev": "dotenv -- turbo run dev",
+    "build": "dotenv -- turbo run build",
+    "start": "dotenv -- turbo run start",
+    "typecheck": "dotenv -- turbo run typecheck",
+    "format": "dotenv -- prettier --write \"**/*.{ts,tsx,md}\"",
+    "db:migrate": "dotenv -- turbo run db:migrate:deploy generate",
+    "db:migrate:create": "dotenv -- turbo run db:migrate:create generate",
+    "db:studio": "dotenv -- turbo run db:studio",
+    "generate": "dotenv -- turbo run generate"
   },
+  "devDependencies": {
+    "dotenv-cli": "^7.4.4",
+    "prettier": "^3.5.3",
+    "turbo": "^2.5.3",
+    "typescript": "5.5.4"
+  },
+  "packageManager": "pnpm@9.0.0",
   "engines": {
-    "node": ">=22.19.0"
+    "node": ">=20"
   }
 }
