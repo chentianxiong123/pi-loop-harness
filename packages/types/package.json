@@ -1,26 +1,38 @@
 {
-  "name": "@core/types",
-  "private": true,
-  "version": "0.0.1",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "name": "@web-clone/types",
+  "version": "1.0.4",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js"
   },
-  "dependencies": {
-    "@prisma/client": "5.4.1",
-    "class-transformer": "0.5.1",
-    "class-validator": "0.14.1"
+  "files": [
+    "dist/"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
-  "devDependencies": {
-    "prisma": "5.4.1",
-    "rimraf": "6.0.1",
-    "esbuild": "^0.25.5"
+  "sideEffects": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kkkqkx123/web-clone.git"
+  },
+  "homepage": "https://github.com/kkkqkx123/web-clone#readme",
+  "bugs": {
+    "url": "https://github.com/kkkqkx123/web-clone/issues"
+  },
+  "keywords": [
+    "types",
+    "web-clone"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
   },
   "scripts": {
-    "clean": "rimraf dist",
-    "typecheck": "tsc --noEmit",
-    "build": "pnpm run clean && tsc --noEmit false --outDir dist --declaration",
-    "dev": "tsc --noEmit false --outDir dist --declaration --watch"
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
   }
 }
