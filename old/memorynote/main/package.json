@@ -1,0 +1,33 @@
+{
+  "name": "memorynote",
+  "private": true,
+  "version": "0.7.3",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "dotenv -- turbo run build",
+    "dev": "dotenv -- turbo run dev",
+    "lint": "dotenv -- turbo run lint",
+    "format": "dotenv -- prettier --write \"**/*.{ts,tsx,md}\"",
+    "check-types": "dotenv -- turbo run check-types",
+    "db:migrate": "dotenv -- turbo run db:migrate:deploy generate",
+    "db:migrate:create": "dotenv -- turbo run db:migrate:create generate",
+    "db:studio": "dotenv -- turbo run db:studio",
+    "generate": "dotenv -- turbo run generate"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^7.4.4",
+    "prettier": "^3.5.3",
+    "turbo": "^2.5.3",
+    "typescript": "5.5.4"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "nodejieba": "^3.5.8"
+  }
+}
