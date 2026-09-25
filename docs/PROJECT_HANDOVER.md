@@ -210,9 +210,9 @@ Vue 前端当前主要页面：
 以下信息已经由用户直接提供，下一位接手者应视为当前环境测试用配置：
 
 - Base URL: `https://api.pie-xian.com`
-- 聊天 Key: `REVOKED_LEAKED_6ieW_DO_NOT_USE`
+- 聊天 Key: `sk-YOUR_CHAT_KEY_HERE_REVOKE_LEAKED_6ieW`
 - 聊天模型: `deepseek-v4-flash`
-- Embedding/Rerank Key: `REVOKED_LEAKED_X7LT_DO_NOT_USE`
+- Embedding/Rerank Key: `sk-YOUR_EMBED_KEY_HERE_REVOKE_LEAKED_X7LT`
 - Embedding 模型: `qwen3-embedding-4b`
 - Rerank 模型: `qwen3-reranker-4b`
 
