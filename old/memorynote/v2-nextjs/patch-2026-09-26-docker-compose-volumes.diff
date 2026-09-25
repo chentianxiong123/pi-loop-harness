@@ -1,0 +1,36 @@
+diff --git a/docker-compose.dev.yaml b/docker-compose.dev.yaml
+index df4f9772..c938d318 100644
+--- a/docker-compose.dev.yaml
++++ b/docker-compose.dev.yaml
+@@ -10,7 +10,7 @@ services:
+     ports:
+       - "5433:5432"  # 映射到 5433，避免和 mybilibili 的 5432 冲突
+     volumes:
+-      - memorynote_postgres_data:/var/lib/postgresql
++      - memorynote-postgres-data:/var/lib/postgresql/data
+     networks:
+       - memorynote-dev
+     healthcheck:
+@@ -39,7 +39,9 @@ services:
+       - "7474:7474"
+       - "7687:7687"
+     volumes:
+-      - memorynote_neo4j_data:/data
++      - memorynote-neo4j-data:/data
++    tmpfs:
++      - /logs
+     networks:
+       - memorynote-dev
+     healthcheck:
+@@ -61,5 +63,9 @@ networks:
+     driver: bridge
+ 
+ volumes:
+-  memorynote_postgres_data:
+-  memorynote_neo4j_data:
++  memorynote-postgres-data:
++    external: true
++    name: memorynote-postgres-data
++  memorynote-neo4j-data:
++    external: true
++    name: memorynote-neo4j-data
