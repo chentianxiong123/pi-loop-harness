@@ -4,3 +4,8 @@ dist/
 *.log
 .env
 .DS_Store
+
+# pi agent 运行时产物
+.pi/runs/
+**/.pi/runs/
+*.sqlite
